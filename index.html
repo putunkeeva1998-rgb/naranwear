@@ -75,13 +75,13 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0;
             display: flex; justify-content: space-around;
-            height: 70px; background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            height: 75px; background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
             border-top: 1px solid var(--tg-theme-hint-color); z-index: 1000;
         }
         .nav-item {
             display: flex; flex-direction: column; justify-content: center;
             align-items: center; color: var(--tg-theme-hint-color);
-            font-size: 10px; text-decoration: none; flex: 1;
+            font-size: 24px; text-decoration: none; flex: 1;
         }
         .nav-item.active { color: var(--tg-theme-button-color, #2481cc); }
 
@@ -101,7 +101,12 @@
         <select class="category-select mb-4 w-full p-3 rounded-lg border" onchange="filterCategory(this.value)">
             <option value="all">Все категории</option>
             <option value="футболки">Футболки</option>
-            <option value="худи">Худи</option>
+            <option value="свитеры"> Свитеры</option>
+            <option value="кардиганы"> Кардиганы</option>
+            <option value="худи"> Худи</option>
+            <option value="юбки"> Юбки</option>
+            <option value="платья"> Платья</option>
+            <option value="верхняя_одежда"> Верхняя одежда</option>
         </select>
 
         <div class="product-grid" id="product-list">
@@ -212,7 +217,7 @@
             list.innerHTML = favorites.length ? favorites.map(f => `<div class="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg">${f}</div>`).join('') : 'Тут пока пусто';
         }
 
-        function addToCart(name, price, id) {
+        function addToCart(name, price, img) {
             tg.showPopup({
                 title: 'Выберите размер',
                 message: `Добавляем ${name}`,
@@ -223,7 +228,8 @@
                 ]
             }, (btnId) => {
                 if (btnId) {
-                    cart.push({ name, price, size: btnId });
+                    // Сохраняем картинку в объекте товара
+                    cart.push({ name, price, size: btnId, img: img });
                     renderCart();
                     tg.HapticFeedback.notificationOccurred('success');
                 }
@@ -237,10 +243,14 @@
             
             if (cart.length > 0) {
                 list.innerHTML = cart.map((item, idx) => `
-                    <div class="flex justify-between items-center p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-2">
-                        <div><b>${item.name}</b> (${item.size})</div>
+                    <div class="flex items-center p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-2">
+                        <img src="${item.img}" class="w-12 h-12 object-cover rounded mr-3">
+                        <div class="flex-1">
+                            <b>${item.name}</b> <br>
+                            <small class="opacity-60">Размер: ${item.size}</small>
+                        </div>
                         <div class="text-green-500 font-bold">${item.price} ₽</div>
-                        <button onclick="removeItem(${idx})" class="text-red-500 ml-2"><i class="fas fa-times"></i></button>
+                        <button onclick="removeItem(${idx})" class="text-red-500 ml-4"><i class="fas fa-times text-lg"></i></button>
                     </div>
                 `).join('');
                 form.classList.remove('hidden');
