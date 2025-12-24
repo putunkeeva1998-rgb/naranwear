@@ -5,59 +5,426 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); font-family: sans-serif; }
-        .card { background-color: var(--tg-theme-secondary-bg-color); border-radius: 20px; overflow: hidden; transition: transform 0.2s; }
-        .card:active { transform: scale(0.98); }
-        .size-btn { border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 12px; font-size: 12px; }
-        .size-btn.active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        body { 
+            background-color: var(--tg-theme-bg-color); 
+            color: var(--tg-theme-text-color); 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding-bottom: 70px; /* Отступ для нижней навигации */
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+        .card { 
+            background-color: var(--tg-theme-secondary-bg-color); 
+            border-radius: 20px; 
+            overflow: hidden; 
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .size-btn, .color-btn { 
+            border: 1px solid var(--tg-theme-hint-color); 
+            border-radius: 8px; 
+            padding: 4px 12px; 
+            font-size: 12px; 
+            background-color: transparent;
+            color: var(--tg-theme-text-color);
+        }
+        .size-btn.active, .color-btn.active { 
+            background-color: var(--tg-theme-button-color); 
+            color: var(--tg-theme-button-text-color); 
+            border-color: var(--tg-theme-button-color); 
+        }
+        .fav-btn { 
+            position: absolute; 
+            top: 15px; 
+            right: 15px; 
+            background-color: rgba(255,255,255,0.7); 
+            border-radius: 50%; 
+            width: 35px; 
+            height: 35px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 18px; 
+            color: #ccc; 
+            border: none;
+            z-index: 10;
+        }
+        .fav-btn.active { color: #e74c3c; } /* Красное сердце */
+
+        /* Нижняя навигация */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 60px;
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-top: 1px solid var(--tg-theme-hint-color);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--tg-theme-hint-color);
+            font-size: 10px;
+            text-decoration: none;
+            flex: 1;
+            padding: 5px 0;
+        }
+        .nav-item.active {
+            color: var(--tg-theme-button-color);
+        }
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 3px;
+        }
+        .category-scroll {
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .category-btn {
+            display: inline-block;
+            background-color: var(--tg-theme-hint-color);
+            color: var(--tg-theme-text-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin-right: 8px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        .category-btn.active {
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+        }
     </style>
 </head>
 <body class="p-4">
-    <h1 class="text-2xl font-bold mb-6">Коллекция Naran Wear</h1>
+    <div class="container">
+        <h1 class="text-2xl font-bold mb-6">Коллекция Naran Wear</h1>
 
-    <div class="card shadow-md mb-6">
-        <img src="https://via.placeholder.com/600x800?text=Hoodie+Naran" class="w-full h-64 object-cover">
-        <div class="p-4">
-            <h2 class="text-lg font-bold mb-1">Худи "Basic Graphite"</h2>
-            <p class="text-sm opacity-60 mb-4">Оверсайз крой, 100% хлопок. Идеально для прогулок.</p>
-            
-            <p class="text-xs font-semibold mb-2 uppercase opacity-50">Выберите размер:</p>
-            <div class="flex gap-2 mb-4">
-                <button onclick="selectSize(this, 'S')" class="size-btn">S</button>
-                <button onclick="selectSize(this, 'M')" class="size-btn active">M</button>
-                <button onclick="selectSize(this, 'L')" class="size-btn">L</button>
+        <div class="category-scroll">
+            <a href="#" class="category-btn active" onclick="filterCategory('all', this)">Все</a>
+            <a href="#" class="category-btn" onclick="filterCategory('футболки', this)">Футболки</a>
+            <a href="#" class="category-btn" onclick="filterCategory('свитеры', this)">Свитеры</a>
+            <a href="#" class="category-btn" onclick="filterCategory('кардиганы', this)">Кардиганы</a>
+            <a href="#" class="category-btn" onclick="filterCategory('худи', this)">Худи</a>
+            <a href="#" class="category-btn" onclick="filterCategory('юбки', this)">Юбки</a>
+            <a href="#" class="category-btn" onclick="filterCategory('платья', this)">Платья</a>
+            <a href="#" class="category-btn" onclick="filterCategory('верхняя_одежда', this)">Верхняя одежда</a>
+        </div>
+
+        <div id="product-list">
+            <div class="card product-card" data-category="худи">
+                <img src="https://putunkeeva1998-rgb.github.io/naranwear/hoodie.jpg" class="w-full h-64 object-cover">
+                <button class="fav-btn" onclick="toggleFavorite(this, 'hoodie_basic')"><i class="far fa-heart"></i></button>
+                <div class="p-4">
+                    <h2 class="text-lg font-bold mb-1">Худи "Basic Graphite"</h2>
+                    <p class="text-sm opacity-60 mb-4">Оверсайз крой, 100% хлопок. Идеально для прогулок.</p>
+                    
+                    <p class="text-xs font-semibold mb-2 uppercase opacity-50">Выберите размер:</p>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="selectOption(this, 'size', 'S')" class="size-btn">S</button>
+                        <button onclick="selectOption(this, 'size', 'M')" class="size-btn active">M</button>
+                        <button onclick="selectOption(this, 'size', 'L')" class="size-btn">L</button>
+                    </div>
+                    
+                    <p class="text-xs font-semibold mb-2 uppercase opacity-50">Выберите цвет:</p>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="selectOption(this, 'color', 'Графит')" class="color-btn active">Графит</button>
+                        <button onclick="selectOption(this, 'color', 'Белый')" class="color-btn">Белый</button>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-xl font-black text-blue-500">4 900 ₽</span>
+                        <button onclick="addToCart('Худи Basic', 4900, this)" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm">В корзину</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="flex justify-between items-center">
-                <span class="text-xl font-black text-blue-500">4 900 ₽</span>
-                <button onclick="addToCart('Худи Basic', 4900)" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm">В корзину</button>
+            <div class="card product-card" data-category="футболки" style="display: none;">
+                <img src="https://putunkeeva1998-rgb.github.io/naranwear/tshirt.jpg" class="w-full h-64 object-cover">
+                <button class="fav-btn" onclick="toggleFavorite(this, 'tshirt_oversize')"><i class="far fa-heart"></i></button>
+                <div class="p-4">
+                    <h2 class="text-lg font-bold mb-1">Футболка "Oversize White"</h2>
+                    <p class="text-sm opacity-60 mb-4">Легкая и дышащая, 100% хлопок. Универсальный стиль.</p>
+                    
+                    <p class="text-xs font-semibold mb-2 uppercase opacity-50">Выберите размер:</p>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="selectOption(this, 'size', 'XS')" class="size-btn">XS</button>
+                        <button onclick="selectOption(this, 'size', 'S')" class="size-btn active">S</button>
+                        <button onclick="selectOption(this, 'size', 'M')" class="size-btn">M</button>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-xl font-black text-green-500">2 500 ₽</span>
+                        <button onclick="addToCart('Футболка Oversize', 2500, this)" class="bg-green-600 text-white px-6 py-2 rounded-xl font-bold text-sm">В корзину</button>
+                    </div>
+                </div>
             </div>
+            </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="#" class="nav-item active" onclick="showTab('catalog', this)"><i class="fas fa-th-large"></i> Каталог</a>
+        <a href="#" class="nav-item" onclick="showTab('favorites', this)"><i class="far fa-heart"></i> Избранное</a>
+        <a href="#" class="nav-item" onclick="showTab('cart', this)"><i class="fas fa-shopping-cart"></i> Корзина</a>
+        <a href="#" class="nav-item" onclick="showTab('profile', this)"><i class="fas fa-user"></i> Профиль</a>
+    </div>
+
+    <div id="favorites-tab" class="container" style="display: none;">
+        <h1 class="text-2xl font-bold mb-6">Избранное</h1>
+        <div id="favorites-list">
+            <p class="text-center opacity-70">Здесь пока ничего нет. Добавьте товары в избранное!</p>
         </div>
     </div>
 
+    <div id="cart-tab" class="container" style="display: none;">
+        <h1 class="text-2xl font-bold mb-6">Корзина</h1>
+        <div id="cart-list">
+            <p class="text-center opacity-70">Ваша корзина пуста.</p>
+        </div>
+         <div id="cart-summary" class="mt-6 p-4 rounded-xl bg-gray-700 text-white" style="display: none;">
+            <p class="text-lg font-bold">Итого: <span id="cart-total">0 ₽</span></p>
+            <button onclick="checkout()" class="w-full bg-blue-600 text-white px-6 py-3 rounded-xl font-bold mt-4">Оформить заказ</button>
+        </div>
+    </div>
+
+    <div id="profile-tab" class="container" style="display: none;">
+        <h1 class="text-2xl font-bold mb-6">Профиль</h1>
+        <div class="bg-gray-700 p-4 rounded-xl mb-4">
+            <h2 class="font-bold mb-2">История заказов</h2>
+            <p class="text-sm opacity-70">Здесь будет ваша история.</p>
+        </div>
+        <div class="bg-gray-700 p-4 rounded-xl">
+            <h2 class="font-bold mb-2">Поддержка</h2>
+            <a href="https://t.me/ВАШ_НИКНЕЙМ_ИЛИ_НИК_ПОДДЕРЖКИ" target="_blank" class="text-blue-400">Связаться с нами в Telegram</a>
+        </div>
+    </div>
+
+
     <script>
         let tg = window.Telegram.WebApp;
-        let selectedSize = 'M';
+        tg.expand(); // Расширяем Mini App на весь экран
 
-        function selectSize(btn, size) {
-            // Убираем активный класс у всех кнопок в этом блоке
-            btn.parentElement.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-            // Добавляем нажатой кнопке
+        // Общее хранилище для выбранных опций товаров
+        let productOptions = {}; // { productId: { size: 'M', color: 'Графит' } }
+        let cart = []; // [{ id: 'hoodie_basic', name: 'Худи Basic', price: 4900, size: 'M', color: 'Графит', quantity: 1 }]
+
+        // Инициализация Telegram Main Button
+        tg.MainButton.text = "Оформить заказ";
+        tg.MainButton.color = tg.themeParams.button_color || '#2481cc';
+        tg.MainButton.text_color = tg.themeParams.button_text_color || '#ffffff';
+        tg.MainButton.onClick(checkout); // Привязываем оформление заказа к основной кнопке
+
+        // Инициализация избранного (из Local Storage)
+        let favorites = new Set(JSON.parse(localStorage.getItem('naranwear_favorites') || '[]'));
+        document.addEventListener('DOMContentLoaded', updateFavoriteButtons);
+
+        function getProductId(element) {
+            // Ищем ближайшую карточку товара и берем её ID или генерируем
+            let card = element.closest('.product-card');
+            return card ? card.dataset.id || card.querySelector('h2').innerText.replace(/\s/g, '_') : 'unknown_product';
+        }
+
+        // Выбор размера/цвета
+        function selectOption(btn, type, value) {
+            let productId = getProductId(btn);
+            if (!productOptions[productId]) {
+                productOptions[productId] = {};
+            }
+            productOptions[productId][type] = value;
+
+            btn.parentElement.querySelectorAll(`.${type}-btn`).forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            selectedSize = size;
+            tg.HapticFeedback.impactOccurred('light');
         }
 
-        function addToCart(name, price) {
-            tg.MainButton.text = `Купить ${name} (${selectedSize}) — ${price}₽`;
-            tg.MainButton.show();
+        // Добавление в корзину
+        function addToCart(name, price, buttonElement) {
+            let productId = getProductId(buttonElement);
+            let options = productOptions[productId] || {size: 'M', color: 'Базовый'}; // Дефолтные значения
+
+            let itemInCart = cart.find(item => item.id === productId && item.size === options.size && item.color === options.color);
+
+            if (itemInCart) {
+                itemInCart.quantity++;
+            } else {
+                cart.push({
+                    id: productId,
+                    name: name,
+                    price: price,
+                    size: options.size,
+                    color: options.color,
+                    quantity: 1
+                });
+            }
+            updateCartUI();
             tg.HapticFeedback.notificationOccurred('success');
+            tg.showPopup({
+                title: 'Добавлено в корзину',
+                message: `${name} (${options.size}, ${options.color}) добавлен!`,
+                buttons: [{id: 'view_cart', type: 'default', text: 'Посмотреть корзину'}]
+            }, (buttonId) => {
+                if (buttonId === 'view_cart') {
+                    showTab('cart', document.querySelector('.nav-item[onclick*="cart"]'));
+                }
+            });
         }
 
-        tg.onEvent('mainButtonClicked', function() {
-            // Здесь мы отправим данные боту
-            tg.sendData(JSON.stringify({product: "Худи", size: selectedSize, price: 4900}));
+        // Обновление интерфейса корзины
+        function updateCartUI() {
+            const cartList = document.getElementById('cart-list');
+            const cartTotal = document.getElementById('cart-total');
+            const cartSummary = document.getElementById('cart-summary');
+            let total = 0;
+
+            cartList.innerHTML = ''; // Очищаем текущий список
+
+            if (cart.length === 0) {
+                cartList.innerHTML = '<p class="text-center opacity-70">Ваша корзина пуста.</p>';
+                cartSummary.style.display = 'none';
+                tg.MainButton.hide();
+            } else {
+                cart.forEach((item, index) => {
+                    total += item.price * item.quantity;
+                    cartList.innerHTML += `
+                        <div class="flex items-center justify-between bg-gray-700 p-3 rounded-xl mb-2">
+                            <div>
+                                <h3 class="font-bold">${item.name}</h3>
+                                <p class="text-sm opacity-70">${item.size}, ${item.color} x ${item.quantity}</p>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-bold mr-3">${item.price * item.quantity} ₽</span>
+                                <button onclick="removeFromCart(${index})" class="bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">-</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                cartTotal.innerText = `${total} ₽`;
+                cartSummary.style.display = 'block';
+                tg.MainButton.show(); // Показываем главную кнопку, если есть товары
+                tg.MainButton.text = `Оформить заказ на ${total} ₽`;
+            }
+        }
+
+        function removeFromCart(index) {
+            tg.HapticFeedback.impactOccurred('medium');
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                tg.showAlert('Ваша корзина пуста!');
+                return;
+            }
+            // Отправляем данные корзины боту
+            tg.sendData(JSON.stringify({ type: 'checkout', items: cart, total: getTotalPrice() }));
+            tg.MainButton.hide(); // Скрываем кнопку после заказа
+            cart = []; // Очищаем корзину после отправки
+            updateCartUI();
+            tg.showAlert('Ваш заказ отправлен! Скоро с вами свяжутся.');
+        }
+
+        function getTotalPrice() {
+            return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        }
+
+        // Переключение вкладок
+        function showTab(tabId, navItem) {
+            document.querySelectorAll('.container').forEach(tab => tab.style.display = 'none');
+            document.getElementById(`${tabId}-tab`).style.display = 'block';
+
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
+            navItem.classList.add('active');
+
+            if (tabId === 'cart') {
+                updateCartUI(); // Обновляем корзину при переходе
+            }
+            if (tabId === 'favorites') {
+                renderFavorites();
+            }
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        // Переключение избранного
+        function toggleFavorite(btn, productId) {
+            if (favorites.has(productId)) {
+                favorites.delete(productId);
+                btn.classList.remove('active');
+            } else {
+                favorites.add(productId);
+                btn.classList.add('active');
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+            localStorage.setItem('naranwear_favorites', JSON.stringify(Array.from(favorites)));
+            updateFavoriteButtons(); // Обновляем все кнопки "сердечко"
+            renderFavorites(); // Обновляем вкладку избранного
+        }
+
+        function updateFavoriteButtons() {
+            document.querySelectorAll('.fav-btn').forEach(btn => {
+                let productId = btn.onclick.toString().match(/'(.*?)'/)[1]; // Извлекаем ID из onclick
+                if (favorites.has(productId)) {
+                    btn.classList.add('active');
+                    btn.querySelector('i').classList.replace('far', 'fas'); // Залитое сердце
+                } else {
+                    btn.classList.remove('active');
+                    btn.querySelector('i').classList.replace('fas', 'far'); // Пустое сердце
+                }
+            });
+        }
+
+        function renderFavorites() {
+            const favoritesList = document.getElementById('favorites-list');
+            favoritesList.innerHTML = '';
+            if (favorites.size === 0) {
+                favoritesList.innerHTML = '<p class="text-center opacity-70">Здесь пока ничего нет. Добавьте товары в избранное!</p>';
+                return;
+            }
+            // Здесь нужно будет загрузить данные о товарах из базы или JS-объекта
+            // Для примера просто выводим ID
+            favorites.forEach(id => {
+                favoritesList.innerHTML += `
+                    <div class="bg-gray-700 p-3 rounded-xl mb-2 flex justify-between items-center">
+                        <span>Товар: ${id} (детали загрузить)</span>
+                        <button onclick="toggleFavorite(this, '${id}')" class="bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+            });
+        }
+        
+        // Фильтрация по категориям
+        function filterCategory(category, buttonElement) {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            buttonElement.classList.add('active');
+
+            document.querySelectorAll('.product-card').forEach(card => {
+                if (category === 'all' || card.dataset.category === category) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        // Показать Каталог по умолчанию при загрузке
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab('catalog', document.querySelector('.nav-item.active'));
+            updateCartUI(); // Инициализация корзины при загрузке
         });
+
     </script>
 </body>
 </html>
