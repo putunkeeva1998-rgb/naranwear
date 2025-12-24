@@ -13,266 +13,276 @@
             color: var(--tg-theme-text-color, #000000); 
             font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
             margin: 0; 
-            padding-bottom: 80px;
+            padding-bottom: 90px;
         }
         .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+        
+        /* Сетка по 2 товара в ряд */
+        .product-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
+
         .card { 
             background-color: var(--tg-theme-secondary-bg-color, #f4f4f5); 
-            border-radius: 20px; 
+            border-radius: 15px; 
             overflow: hidden; 
-            margin-bottom: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
-        .size-btn, .color-btn { 
-            border: 1px solid var(--tg-theme-hint-color, #ccc); 
-            border-radius: 8px; 
-            padding: 6px 14px; 
-            font-size: 13px; 
-            background-color: transparent;
-            color: var(--tg-theme-text-color);
+
+        /* Листание фото (горизонтальный скролл) */
+        .image-slider {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            height: 180px;
         }
-        .size-btn.active, .color-btn.active { 
-            background-color: var(--tg-theme-button-color, #2481cc); 
-            color: var(--tg-theme-button-text-color, #ffffff); 
-            border-color: var(--tg-theme-button-color, #2481cc); 
+        .image-slider img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            flex-shrink: 0;
+            scroll-snap-align: start;
         }
+        .image-slider::-webkit-scrollbar { display: none; }
+
+        .price-tag { color: #2ecc71; font-weight: 900; font-size: 1.1rem; }
+        
+        .btn-green { 
+            background-color: #2ecc71 !important; 
+            color: white !important; 
+            width: 100%; 
+            padding: 10px; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            margin-top: 8px;
+            font-size: 0.8rem;
+        }
+
         .fav-btn { 
-            position: absolute; 
-            top: 15px; 
-            right: 15px; 
-            background-color: rgba(255,255,255,0.8); 
-            border-radius: 50%; 
-            width: 38px; 
-            height: 38px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 18px; 
-            color: #ccc; 
-            border: none;
-            z-index: 10;
+            position: absolute; top: 8px; right: 8px; 
+            background: rgba(255,255,255,0.8); 
+            border-radius: 50%; width: 32px; height: 32px; 
+            display: flex; align-items: center; justify-content: center;
+            color: #ccc; border: none; z-index: 20;
         }
         .fav-btn.active { color: #e74c3c; }
-
-        /* Стиль выпадающего списка категорий */
-        .category-select {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
-            color: var(--tg-theme-text-color);
-            border: 1px solid var(--tg-theme-hint-color);
-            font-weight: bold;
-            margin-bottom: 20px;
-            outline: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
-        }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0;
             display: flex; justify-content: space-around;
-            align-items: center; height: 65px;
-            background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
-            border-top: 1px solid var(--tg-theme-hint-color);
-            z-index: 1000;
+            height: 70px; background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            border-top: 1px solid var(--tg-theme-hint-color); z-index: 1000;
         }
         .nav-item {
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; justify-content: center;
             align-items: center; color: var(--tg-theme-hint-color);
-            font-size: 11px; text-decoration: none; flex: 1;
+            font-size: 10px; text-decoration: none; flex: 1;
         }
         .nav-item.active { color: var(--tg-theme-button-color, #2481cc); }
-        .nav-item i { font-size: 20px; margin-bottom: 3px; }
+
+        input, select {
+            width: 100%; padding: 12px; margin: 8px 0;
+            border-radius: 10px; border: 1px solid var(--tg-theme-hint-color);
+            background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color);
+        }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div class="container" id="catalog-tab">
-        <h1 class="text-2xl font-bold mb-6">Коллекция Naran Wear</h1>
-
-        <select class="category-select" onchange="filterCategory(this.value)">
-            <option value="all"> Все категории</option>
-            <option value="футболки"> Футболки</option>
-            <option value="свитеры"> Свитеры</option>
-            <option value="кардиганы"> Кардиганы</option>
-            <option value="худи"> Худи</option>
-            <option value="юбки"> Юбки</option>
-            <option value="платья"> Платья</option>
-            <option value="верхняя_одежда">❄️ Верхняя одежда</option>
+        <h1 class="text-xl font-bold mb-4">Naran Wear</h1>
+        
+        <select class="category-select mb-4 w-full p-3 rounded-lg border" onchange="filterCategory(this.value)">
+            <option value="all">Все категории</option>
+            <option value="футболки">Футболки</option>
+            <option value="худи">Худи</option>
         </select>
 
-        <div id="product-list">
-            
-            <div class="card product-card" data-category="футболки" data-id="tshirt_black">
-                <img src="tshirtblack.png" class="w-full h-72 object-cover" onerror="this.src='https://via.placeholder.com/400x500?text=Photo+Coming+Soon'">
-                <button class="fav-btn" onclick="toggleFavorite(this, 'tshirt_black')"><i class="far fa-heart"></i></button>
-                <div class="p-4">
-                    <h2 class="text-lg font-bold mb-1">Футболка "Oversize Black"</h2>
-                    <p class="text-sm opacity-60 mb-4">Футболка с кружевами. Единый размер (42-46).</p>
-                    
-                    <div class="flex gap-2 mb-4">
-                        <button onclick="selectOption(this, 'size', '42-46')" class="size-btn active">42-46</button>
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-xl font-black text-white">2 500 ₽</span>
-                        <button onclick="addToCart('Футболка Black', 2500, this)" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm">В корзину</button>
-                    </div>
-                </div>
-            </div>
-
+        <div class="product-grid" id="product-list">
             <div class="card product-card" data-category="футболки" data-id="tshirt_grey">
-                <img src="tshirtgrey.png" class="w-full h-72 object-cover" onerror="this.src='https://via.placeholder.com/400x500?text=Photo+Coming+Soon'">
-                <button class="fav-btn" onclick="toggleFavorite(this, 'tshirt_grey')"><i class="far fa-heart"></i></button>
-                <div class="p-4">
-                    <h2 class="text-lg font-bold mb-1">Футболка "Oversize Grey"</h2>
-                    <p class="text-sm opacity-60 mb-4">Футболка с кружевами. Единый размер (42-46).</p>
-                    
-                    <div class="flex gap-2 mb-4">
-                        <button onclick="selectOption(this, 'size', '42-46')" class="size-btn active">42-46</button>
-                    </div>
+                <div class="image-slider">
+                    <img src="tshirtgrey.png">
+                    <img src="tshirtblack.png">
+                </div>
+                <button class="fav-btn" onclick="toggleFavorite(this, 'Oversize Grey')"><i class="fas fa-heart"></i></button>
+                <div class="p-3">
+                    <h2 class="text-sm font-bold truncate">Oversize Grey</h2>
+                    <span class="price-tag">2 500 ₽</span>
+                    <button class="btn-green" onclick="addToCart('Oversize Grey', 2500, 'tshirt_grey')">В КОРЗИНУ</button>
+                </div>
+            </div>
 
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-xl font-black text-green-500">2 500 ₽</span>
-                        <button onclick="addToCart('Футболка Grey', 2500, this)" class="bg-green-600 text-white px-6 py-2 rounded-xl font-bold text-sm">В корзину</button>
-                    </div>
+            <div class="card product-card" data-category="футболки" data-id="tshirt_black">
+                <div class="image-slider">
+                    <img src="tshirtblack.png">
+                    <img src="tshirtgrey.png">
+                </div>
+                <button class="fav-btn" onclick="toggleFavorite(this, 'Oversize Black')"><i class="fas fa-heart"></i></button>
+                <div class="p-3">
+                    <h2 class="text-sm font-bold truncate">Oversize Black</h2>
+                    <span class="price-tag">2 500 ₽</span>
+                    <button class="btn-green" onclick="addToCart('Oversize Black', 2500, 'tshirt_black')">В КОРЗИНУ</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="favorites-tab" class="container" style="display: none;">
+    <div id="favorites-tab" class="container hidden">
         <h1 class="text-2xl font-bold mb-6">Избранное</h1>
-        <div id="favorites-list" class="text-center opacity-50 py-10">Тут пока пусто</div>
+        <div id="favorites-list" class="space-y-2">Тут пока пусто</div>
     </div>
 
-    <div id="cart-tab" class="container" style="display: none;">
-        <h1 class="text-2xl font-bold mb-6">Корзина</h1>
-        <div id="cart-list"></div>
-        <div id="cart-summary" class="mt-6 p-4 rounded-xl bg-zinc-800 text-white" style="display: none;">
-            <p class="text-lg font-bold text-center">Итого: <span id="cart-total">0 ₽</span></p>
+    <div id="cart-tab" class="container hidden">
+        <h1 class="text-2xl font-bold mb-4">Оформление</h1>
+        <div id="cart-list" class="mb-6"></div>
+        
+        <div id="order-form" class="hidden">
+            <input type="text" id="fio" placeholder="Ваше Имя и Фамилия">
+            <input type="tel" id="phone" placeholder="Номер телефона">
+            <select id="delivery">
+                <option value="СДЭК">СДЭК</option>
+                <option value="5post">5post</option>
+                <option value="Почта России">Почта России</option>
+            </select>
+            <p class="text-xs opacity-60 mb-4">Адрес склада: г. Москва, Чагинская 4 стр 13</p>
+            <button class="btn-green py-4 text-lg" onclick="sendOrder()">ОФОРМИТЬ ЗАКАЗ</button>
+        </div>
+        <div id="empty-cart-msg" class="text-center opacity-50 py-10">Корзина пуста</div>
+    </div>
+
+    <div id="profile-tab" class="container hidden text-center">
+        <img id="user-pic" class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-green-500" src="">
+        <h2 id="user-name" class="text-xl font-bold mb-1">Пользователь</h2>
+        <p class="text-xs opacity-50 mb-6">г. Москва, Чагинская 4 стр 13</p>
+        
+        <button class="w-full bg-blue-500 text-white p-3 rounded-xl mb-3 font-bold" onclick="tg.openTelegramLink('https://t.me/putunkeeva1998')">НАПИСАТЬ В ПОДДЕРЖКУ</button>
+        <div class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl text-left">
+            <h3 class="font-bold text-sm">Мои заказы</h3>
+            <p class="text-xs opacity-50">Заказов пока нет</p>
         </div>
     </div>
 
-    <div id="profile-tab" class="container" style="display: none;">
-        <h1 class="text-2xl font-bold mb-6">Профиль</h1>
-        <div class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl">
-            <h2 class="font-bold">Мои заказы</h2>
-            <p class="text-sm opacity-60">История заказов пуста</p>
-        </div>
-    </div>
-
-    <div class="bottom-nav">
-        <a href="javascript:void(0)" class="nav-item active" onclick="showTab('catalog', this)"><i class="fas fa-th-large"></i> Каталог</a>
-        <a href="javascript:void(0)" class="nav-item" onclick="showTab('favorites', this)"><i class="far fa-heart"></i> Избранное</a>
-        <a href="javascript:void(0)" class="nav-item" onclick="showTab('cart', this)"><i class="fas fa-shopping-cart"></i> Корзина</a>
-        <a href="javascript:void(0)" class="nav-item" onclick="showTab('profile', this)"><i class="fas fa-user"></i> Профиль</a>
-    </div>
+    <nav class="bottom-nav">
+        <a href="javascript:void(0)" class="nav-item active" onclick="showTab('catalog', this)"><i class="fas fa-th-large"></i>Каталог</a>
+        <a href="javascript:void(0)" class="nav-item" onclick="showTab('favorites', this)"><i class="fas fa-heart"></i>Избранное</a>
+        <a href="javascript:void(0)" class="nav-item" onclick="showTab('cart', this)"><i class="fas fa-shopping-basket"></i>Корзина</a>
+        <a href="javascript:void(0)" class="nav-item" onclick="showTab('profile', this)"><i class="fas fa-user"></i>Профиль</a>
+    </nav>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-
         let cart = [];
-        let favorites = new Set(JSON.parse(localStorage.getItem('favs') || '[]'));
-        let selectedOptions = {};
+        let favorites = [];
 
-        // Фильтрация через Select
-        function filterCategory(cat) {
-            document.querySelectorAll('.product-card').forEach(card => {
-                card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'block' : 'none';
-            });
-            tg.HapticFeedback.selectionChanged();
+        // Инициализация профиля
+        if (tg.initDataUnsafe.user) {
+            document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name + ' ' + (tg.initDataUnsafe.user.last_name || '');
+            document.getElementById('user-pic').src = tg.initDataUnsafe.user.photo_url || 'https://via.placeholder.com/100';
+            // Пробуем получить телефон, если он есть в профиле (но обычно его надо вводить)
+            document.getElementById('phone').value = tg.initDataUnsafe.user.phone_number || '';
         }
 
-        // Выбор размера
-        function selectOption(btn, type, val) {
-            let card = btn.closest('.product-card');
-            let id = card.dataset.id;
-            selectedOptions[id] = selectedOptions[id] || {};
-            selectedOptions[id][type] = val;
-            
-            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            tg.HapticFeedback.impactOccurred('light');
-        }
-
-        // Корзина
-        function addToCart(name, price, btn) {
-            let id = btn.closest('.product-card').dataset.id;
-            let size = (selectedOptions[id] && selectedOptions[id].size) || 'M';
-            cart.push({name, price, size});
-            
-            updateMainButton();
-            tg.HapticFeedback.notificationOccurred('success');
-            
-            tg.showPopup({
-                message: `Товар ${name} (размер ${size}) добавлен в корзину!`
-            });
-        }
-
-        function updateMainButton() {
-            if (cart.length > 0) {
-                let total = cart.reduce((sum, item) => sum + item.price, 0);
-                tg.MainButton.text = `Оформить заказ (${total} ₽)`;
-                tg.MainButton.show();
-            } else {
-                tg.MainButton.hide();
-            }
-        }
-
-        // Переключение вкладок
-        function showTab(tabId, el) {
-            document.querySelectorAll('.container').forEach(t => t.style.display = 'none');
-            document.getElementById(`${tabId}-tab`).style.display = 'block';
+        function showTab(id, el) {
+            document.querySelectorAll('.container').forEach(t => t.classList.add('hidden'));
+            document.getElementById(id + '-tab').classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
-            
-            if(tabId === 'cart') renderCart();
-            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function toggleFavorite(btn, name) {
+            btn.classList.toggle('active');
+            if (btn.classList.contains('active')) {
+                favorites.push(name);
+                tg.showPopup({ title: 'Избранное', message: `Товар ${name} добавлен. Выберите размер при заказе!` });
+            } else {
+                favorites = favorites.filter(f => f !== name);
+            }
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            const list = document.getElementById('favorites-list');
+            list.innerHTML = favorites.length ? favorites.map(f => `<div class="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg">${f}</div>`).join('') : 'Тут пока пусто';
+        }
+
+        function addToCart(name, price, id) {
+            tg.showPopup({
+                title: 'Выберите размер',
+                message: `Добавляем ${name}`,
+                buttons: [
+                    {id: '42', text: '42', type: 'default'},
+                    {id: '44', text: '44', type: 'default'},
+                    {id: '46', text: '46', type: 'default'}
+                ]
+            }, (btnId) => {
+                if (btnId) {
+                    cart.push({ name, price, size: btnId });
+                    renderCart();
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            });
         }
 
         function renderCart() {
             const list = document.getElementById('cart-list');
-            list.innerHTML = cart.length ? '' : '<p class="text-center opacity-50 py-10">Корзина пуста</p>';
-            cart.forEach((item, index) => {
-                list.innerHTML += `<div class="flex justify-between p-4 bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-2">
-                    <div><b>${item.name}</b><br><small>Размер: ${item.size}</small></div>
-                    <div class="text-right"><b>${item.price} ₽</b><br>
-                    <button onclick="removeFromCart(${index})" class="text-red-500 text-xs">Удалить</button></div>
-                </div>`;
-            });
-            document.getElementById('cart-summary').style.display = cart.length ? 'block' : 'none';
-            document.getElementById('cart-total').innerText = cart.reduce((s, i) => s + i.price, 0) + ' ₽';
+            const form = document.getElementById('order-form');
+            const msg = document.getElementById('empty-cart-msg');
+            
+            if (cart.length > 0) {
+                list.innerHTML = cart.map((item, idx) => `
+                    <div class="flex justify-between items-center p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-2">
+                        <div><b>${item.name}</b> (${item.size})</div>
+                        <div class="text-green-500 font-bold">${item.price} ₽</div>
+                        <button onclick="removeItem(${idx})" class="text-red-500 ml-2"><i class="fas fa-times"></i></button>
+                    </div>
+                `).join('');
+                form.classList.remove('hidden');
+                msg.classList.add('hidden');
+            } else {
+                list.innerHTML = '';
+                form.classList.add('hidden');
+                msg.classList.remove('hidden');
+            }
         }
 
-        function removeFromCart(idx) {
+        function removeItem(idx) {
             cart.splice(idx, 1);
             renderCart();
-            updateMainButton();
         }
 
-        function toggleFavorite(btn, id) {
-            if (favorites.has(id)) {
-                favorites.delete(id);
-                btn.classList.remove('active');
-            } else {
-                favorites.add(id);
-                btn.classList.add('active');
+        function sendOrder() {
+            const fio = document.getElementById('fio').value;
+            const phone = document.getElementById('phone').value;
+            const delivery = document.getElementById('delivery').value;
+
+            if (!fio || !phone) {
+                tg.showAlert("Пожалуйста, введите Имя и Телефон!");
+                return;
             }
-            localStorage.setItem('favs', JSON.stringify(Array.from(favorites)));
-            tg.HapticFeedback.impactOccurred('medium');
+
+            const data = {
+                заказчик: fio,
+                телефон: phone,
+                доставка: delivery,
+                товары: cart,
+                итого: cart.reduce((s, i) => s + i.price, 0)
+            };
+
+            tg.sendData(JSON.stringify(data));
         }
 
-        tg.MainButton.onClick(() => {
-            tg.sendData(JSON.stringify({order: cart}));
-        });
+        function filterCategory(cat) {
+            document.querySelectorAll('.product-card').forEach(card => {
+                card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'block' : 'none';
+            });
+        }
     </script>
 </body>
 </html>
