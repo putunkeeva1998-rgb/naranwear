@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -14,7 +12,7 @@
     <style>
         :root { 
             --accent: #653937; /* Насыщенный розовый */
-            --bg: #b46363; /* Нежно-розовый фон */
+            --bg: #c3acac; /* Нежно-розовый фон */
             --card-bg: #ffffff;
             --dark: #2d2d2d; 
             --gray: #a0a0a0; 
@@ -356,18 +354,23 @@
                 user: { first_name: 'Покупатель', photo: '' },
                 form: { name: '', phone: '' },
                 products: [
-                    { id: 1, category: 'ПИДЖАКИ', name: 'Пиджак с бантом черный"', price: 2900, images: ['black1.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Пиджак с бантом.' },
-                    { id: 2, category: 'ПИДЖАКИ', name: 'Пиджак с бантом черный"', price: 2900, images: ['red1.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Пиджак с бантом.' },
-                    { id: 3, category: 'СВИТЕРЫ', name: 'Свитер Турция"', price: 1900, images: ['sviterblack1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Свитер турция.' },
-                    { id: 4, category: 'СВИТЕРЫ', name: 'Свитер Турция"', price: 1900, images: ['sviterbrown1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Свитер турция.' },
-                    { id: 5, category: 'СВИТЕРЫ', name: 'Свитер Турция"', price: 1900, images: ['svitergrey1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Свитер турция.' },
-                    { id: 6, category: 'КАРДИГАНЫ', name: 'Кардиган"', price: 2300, images: ['kardiganwhite1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Кардиган.' },
-                    { id: 7, category: 'КАРДИГАНЫ', name: 'Кардиган"', price: 2300, images: ['kardiganblack1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Кардиган.' },
-                    { id: 8, category: 'КОРСЕТЫ', name: 'Корсет"', price: 2100, images: ['korsetwhite1.jpg', 'korsetred1.jpg', 'korsetblack11.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Корсет.' },
-                    { id: 9, category: 'КУРТКИ', name: 'Куртка"', price: 3600, images: ['kurtkabrown1.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Куртка женская.' },
-                    { id: 10, category: 'КУРТКИ', name: 'Куртка"', price: 3900, images: ['kurtkamehbrown1.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Куртка женская с искусственным мехом.' },                 
-                    { id: 11, category: 'ЭКОШУБЫ', name: 'Экошуба"', price: 3900, images: ['ecoshuba2.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Экошуба.' },
-                    { id: 12, category: 'ЭКОШУБЫ', name: 'Экошуба"', price: 3900, images: ['ecoshuba1.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Экошуба.' }
+                    { id: 1, category: 'ПИДЖАКИ', name: 'Пиджак с бантом черный', price: 2900, images: ['black1.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Пиджак с бантом.' },
+                    { id: 2, category: 'ПИДЖАКИ', name: 'Пиджак с бантом бордовый', price: 2900, images: ['red1.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Пиджак с бантом.' },
+                    { id: 3, category: 'СВИТЕРЫ', name: 'Свитер черный Турция', price: 1900, images: ['sviterblack1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Свитер турция.' },
+                    { id: 4, category: 'СВИТЕРЫ', name: 'Свитер коричневый Турция', price: 1900, images: ['sviterbrown1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Свитер турция.' },
+                    { id: 5, category: 'СВИТЕРЫ', name: 'Свитер серый Турция', price: 1900, images: ['svitergrey1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Свитер турция.' },
+                    { id: 6, category: 'КАРДИГАНЫ', name: 'Кардиган', price: 2300, images: ['kardiganwhite1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Кардиган.' },
+                    { id: 7, category: 'КАРДИГАНЫ', name: 'Кардиган', price: 2300, images: ['kardiganblack1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Кардиган.' },
+                    { id: 8, category: 'ЛОНГСЛИВЫ', name: 'Кардиган', price: 1800, images: ['longwhite1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Лонгслив.' },
+                    { id: 9, category: 'ЛОНГСЛИВЫ', name: 'Кардиган', price: 1800, images: ['longgreen1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Лонгслив.' },
+                    { id: 10, category: 'ЛОНГСЛИВЫ', name: 'Кардиган', price: 1800, images: ['longblack1.jpg'], sizes: ['42-46'], selS: '42-46', aIdx: 0, desc: 'Лонгслив.' },
+                    { id: 11, category: 'КОРСЕТЫ', name: 'Корсет', price: 2100, images: ['korsetwhite1.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Корсет.' },
+                    { id: 12, category: 'КОРСЕТЫ', name: 'Корсет', price: 2100, images: ['korsetred1.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Корсет.' },
+                    { id: 13, category: 'КОРСЕТЫ', name: 'Корсет', price: 2100, images: ['korsetblack11.jpg'], sizes: ['42','44'], selS: '42', aIdx: 0, desc: 'Корсет.' },
+                    { id: 14, category: 'КУРТКИ', name: 'Куртка', price: 3600, images: ['kurtkabrown1.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Куртка женская.' },
+                    { id: 15, category: 'КУРТКИ', name: 'Куртка', price: 3900, images: ['kurtkamehbrown1.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Куртка женская с искусственным мехом.' },                 
+                    { id: 16, category: 'ЭКОШУБЫ', name: 'Экошуба', price: 3900, images: ['ecoshuba2.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Экошуба.' },
+                    { id: 17, category: 'ЭКОШУБЫ', name: 'Экошуба', price: 3900, images: ['ecoshuba1.jpg'], sizes: ['42-44'], selS: '42-44', aIdx: 0, desc: 'Экошуба.' }
                 ],
                 cart: JSON.parse(localStorage.getItem('mimi_cart') || '[]'),
                 favs: JSON.parse(localStorage.getItem('mimi_favs') || '[]')
