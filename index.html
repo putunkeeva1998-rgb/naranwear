@@ -681,6 +681,9 @@ locateMe() {
         const u = tg.initDataUnsafe.user;
         this.user = { first_name: u.first_name, photo: u.photo_url };
         this.form.name = u.first_name;
+        if (u.id === this.adminId) {
+            this.isAdmin = true;
+            }
         const savedPhone = localStorage.getItem('naran_user_phone');
         if (savedPhone) {
             this.form.phone = savedPhone;
