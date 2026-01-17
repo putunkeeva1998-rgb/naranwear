@@ -195,13 +195,13 @@
                 <div v-for="p in filteredProducts" :key="p.id" class="card" style="position: relative;">
                 <button v-if="isAdmin && activeTab === 'admin'"
             @click.stop="toggleHideProduct(p)" 
-            style="position: absolute; top: 10px; left: 10px; z-index: 9999; background: #ff4444; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-            <span style="font-size: 20px; filter: drop-shadow(0 0 2px black);">{{ p.hidden ? '👁️‍🗨️' : '👁️' }}</span>
+            style="position: absolute; top: 10px; left: 10px; z-index: 9999; background: rgb(57, 12, 12); border: 2px solid var(--accent); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); padding: 0; cursor: pointer;">
+            <span style="font-size: 20px;">{{ p.hidden ? '👁️‍🗨️' : '👁️' }}</span>
           </button>
     
     <div v-if="p.hidden && activeTab === 'admin'" 
          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; border-radius: 24px;">
-         <span style="color: white; font-weight: 800; font-size: 12px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px;">СКРЫТО</span>
+         <span style="color: rgb(231, 76, 76); font-weight: 800; font-size: 12px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px;">СКРЫТО</span>
     </div>
 
     <button class="fav-heart" @click.stop="toggleFav(p)" :class="{active: isFav(p)}">
