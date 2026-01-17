@@ -333,11 +333,38 @@
         <input class="input-c" v-model="newP.img" placeholder="Ссылка на фото (например, с ImgBB)">
     </div>
 
-    <button class="buy-btn" @click="addProduct" :disabled="uploading || !newP.img" style="padding: 15px;">
-        <span v-if="uploading">⏳ ЗАГРУЗКА...</span>
-        <span v-else>ОПУБЛИКОВАТЬ</span>
+    <button class="buy-btn" @click="addProduct" :disabled="loading" style="margin-top: 20px;">
+       {{ loading ? 'ЗАГРУЗКА...' : 'ОПУБЛИКОВАТЬ' }}
     </button>
-</div>
+
+
+    <div style="margin-top: 30px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px;">
+            <h3 style="text-align: center; font-size: 16px; color: var(--accent); margin-bottom: 15px;">
+                Управление товарами ({{currentCat}})
+            </h3>
+            
+            <div v-if="filteredProducts.length === 0" style="text-align: center; color: var(--gray); font-size: 12px; padding: 20px;">
+                В этой категории товаров пока нет
+            </div>
+
+            <div v-for="p in filteredProducts" :key="p.id" 
+                 style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #fff; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img :src="p.images ? p.images[0] : p.img" style="width: 45px; height: 45px; object-fit: cover; border-radius: 8px;">
+                    <div>
+                        <div style="font-size: 13px; font-weight: 700; color: var(--dark);">{{p.name}}</div>
+                        <div style="font-size: 11px; color: var(--gray);">{{p.price}} ₽</div>
+                    </div>
+                </div>
+
+                <button @click.stop="toggleHideProduct(p)" 
+                        :style="{ background: p.hidden ? '#eee' : 'var(--light-pink)', border: '1px solid var(--accent)', padding: '8px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold', color: 'var(--accent)' }">
+                    {{ p.hidden ? '❌ Скрыт' : '✅ Виден' }}
+                </button>
+            </div>
+        </div>
+
 
     <div v-if="selP" class="modal">
         <button class="close-m" @click="selP = null">✕</button>
@@ -540,15 +567,28 @@
         alert('Ошибка при сохранении. Проверьте соединение.');
     }
 },
-async toggleHideProduct(p) {
+async toggleHideProduct(p) { // Здесь теперь (p)
     try {
-        const docRef = window.fbMethods.doc(window.db, "products", p.id);
-        await window.fbMethods.updateDoc(docRef, {
-            hidden: !p.hidden
-        });
-        this.vibrate();
+        // Проверяем, что у товара есть ID из базы данных
+        if (p.id && typeof p.id === 'string') {
+            const newStatus = !p.hidden;
+            const docRef = window.fbMethods.doc(window.db, "products", p.id);
+            
+            await window.fbMethods.updateDoc(docRef, {
+                hidden: newStatus
+            });
+            
+            // Обновляем состояние прямо на экране
+            p.hidden = newStatus;
+            tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            // Для обычных (локальных) товаров просто переключаем визуально
+            p.hidden = !p.hidden;
+            tg.HapticFeedback.impactOccurred('light');
+        }
     } catch (e) {
-        console.error("Ошибка:", e);
+        console.error("Ошибка Firebase:", e);
+        alert("Не удалось сохранить изменения в базе данных");
     }
 },
             initMap() {
@@ -681,6 +721,8 @@ locateMe() {
         },
         
         mounted() {
+    alert("Мой ID: " + tg.initDataUnsafe?.user?.id);
+    
     tg.ready();
     tg.expand();
     
