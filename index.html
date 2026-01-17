@@ -192,7 +192,7 @@
                 <button v-for="c in categories" @click="currentCat = c; vibrate()" :class="['cat-tab', currentCat === c ? 'active' : '']">{{c}}</button>
             </div>
             <div class="products-grid">
-                <div v-for="p in filteredProducts" :key="p.id" class="card" style="position: relative;">
+                <div v-for="p in products" :key="p.id" class="card" style="position: relative;">
                 <button v-if="activeTab === 'admin'" 
         @click.stop="toggleHideProduct(p)" 
         style="position: absolute; top: 10px; left: 10px; z-index: 9999; background: #ff4444; border: 2px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; padding: 0;">
@@ -338,10 +338,10 @@
     </button>
 
 
-    <div style="margin-top: 30px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px;">
-            <h3 style="text-align: center; font-size: 16px; color: var(--accent); margin-bottom: 15px;">
-                Управление товарами ({{currentCat}})
-            </h3>
+   <div style="margin-top: 30px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px;">
+    <h3 style="text-align: center; font-size: 16px; color: var(--accent); margin-bottom: 15px;">
+        Управление: {{currentCat}} (Найдено: {{filteredProducts.length}})
+    </h3>
             
             <div v-if="filteredProducts.length === 0" style="text-align: center; color: var(--gray); font-size: 12px; padding: 20px;">
                 В этой категории товаров пока нет
@@ -722,7 +722,7 @@ locateMe() {
         
         mounted() {
     alert("Мой ID: " + tg.initDataUnsafe?.user?.id);
-    
+
     tg.ready();
     tg.expand();
     
