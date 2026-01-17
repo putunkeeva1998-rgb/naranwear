@@ -331,24 +331,26 @@
         <span v-else>ОПУБЛИКОВАТЬ</span>
     </button>
     <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-    <h3 style="text-align: center; font-size: 16px; color: var(--accent);">Управление товарами ({{currentCat}})</h3>
-    
-    <div v-if="Products.length === 0" style="text-align: center; color: var(--gray); font-size: 12px; padding: 20px;">
-        В этой категории пока нет товаров
-    </div>
-
-    <div v-for="p in filteredProducts" :key="p.id" 
-         style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9f9f9; border-radius: 12px; margin-bottom: 8px;">
+        <h3 style="text-align: center; font-size: 16px; color: var(--accent); margin-bottom: 15px;">Управление товарами ({{currentCat}})</h3>
         
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <img :src="p.images ? p.images[0] : p.img" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
-            <span style="font-size: 13px; font-weight: 600;">{{p.name}}</span>
+        <div v-if="filteredProducts.length === 0" style="text-align: center; color: var(--gray); font-size: 12px; padding: 20px;">
+            В этой категории товаров пока нет
         </div>
 
-        <div style="display: flex; gap: 10px;">
+        <div v-for="p in filteredProducts" :key="p.id" 
+             style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9f9f9; border-radius: 12px; margin-bottom: 8px;">
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img :src="p.images ? p.images[0] : p.img" style="width: 45px; height: 45px; object-fit: cover; border-radius: 8px;">
+                <div>
+                    <div style="font-size: 13px; font-weight: 700;">{{p.name}}</div>
+                    <div style="font-size: 11px; color: var(--gray);">{{p.price}} ₽</div>
+                </div>
+            </div>
+
             <button @click="toggleHideProduct(p)" 
-                    :style="{ background: p.hidden ? '#eee' : 'var(--light-pink)', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer' }">
-                {{ p.hidden ? '👁️‍🗨️ Скрыт' : '👁️ Виден' }}
+                    :style="{ background: p.hidden ? '#e0e0e0' : 'var(--light-pink)', border: 'none', padding: '10px', borderRadius: '10px', fontSize: '12px', cursor: 'pointer' }">
+                {{ p.hidden ? '❌ Скрыт' : '✅ Виден' }}
             </button>
         </div>
     </div>
