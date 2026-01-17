@@ -539,9 +539,15 @@
     }
 },
 async toggleHideProduct(p) {
-    const docRef = window.fbMethods.doc(window.db, "products", p.id);
-    await window.fbMethods.updateDoc(docRef, { hidden: !p.hidden });
-    alert(p.hidden ? 'Товар показан' : 'Товар скрыт');
+    try {
+        const docRef = window.fbMethods.doc(window.db, "products", p.id);
+        await window.fbMethods.updateDoc(docRef, {
+            hidden: !p.hidden
+        });
+        this.vibrate();
+    } catch (e) {
+        console.error("Ошибка:", e);
+    }
 },
             initMap() {
     this.$nextTick(() => {
@@ -681,7 +687,7 @@ locateMe() {
         const u = tg.initDataUnsafe.user;
         this.user = { first_name: u.first_name, photo: u.photo_url };
         this.form.name = u.first_name;
-        if (u.id === this.adminId) {
+        if (Number(u.id) === Number(this.adminId)) {
             this.isAdmin = true;
             }
         const savedPhone = localStorage.getItem('naran_user_phone');
