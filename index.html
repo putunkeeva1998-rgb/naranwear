@@ -577,9 +577,10 @@
         alert('Ошибка при сохранении. Проверьте соединение.');
     }
 },
-async toggleHideProduct(p) { // Мы используем 'p', чтобы совпадало с логикой внутри
+async toggleHideProduct(p) {
     try {
-        if (p.id && typeof p.id === 'string') {
+        // Мы используем 'p', так как это имя переменной в скобках выше
+        if (p && p.id && typeof p.id === 'string') {
             const newStatus = !p.hidden;
             const docRef = window.fbMethods.doc(window.db, "products", p.id);
             
@@ -587,10 +588,10 @@ async toggleHideProduct(p) { // Мы используем 'p', чтобы сов
                 hidden: newStatus
             });
             
-            p.hidden = newStatus;
+            p.hidden = newStatus; // Обновляем в интерфейсе
             tg.HapticFeedback.notificationOccurred('success');
         } else {
-            // Для локальных товаров
+            // Для товаров, прописанных вручную в коде
             p.hidden = !p.hidden;
             tg.HapticFeedback.impactOccurred('light');
         }
