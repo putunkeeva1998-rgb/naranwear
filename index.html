@@ -310,12 +310,9 @@
     <div v-if="isAdmin" style="margin-top: 20px; padding: 15px; border-top: 2px solid var(--light-pink);">
         <h3 style="text-align: center; color: var(--accent); text-transform: uppercase; font-size: 16px;">Админ-панель</h3>
         
-        <button class="buy-btn" @click="activeTab = 'catalog'; vibrate()" style="margin-bottom: 20px; background: #50b183;">
-            ⚙️ УПРАВЛЯТЬ ВИДИМОСТЬЮ В КАТАЛОГЕ
-        </button>
-
-        <div style="background: #fff; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-            <h4 style="margin-top: 0;">Добавить товар</h4>
+        <div style="background: #fff; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px;">
+            <h4 style="margin-top: 0; font-size: 14px;">📦 Добавить новый товар</h4>
+            
             <input class="input-c" v-model="newP.name" placeholder="Название" style="margin-bottom: 10px;">
             <textarea class="input-c" v-model="newP.desc" placeholder="Описание..." style="margin-bottom: 10px; height: 60px;"></textarea>
             
@@ -326,16 +323,54 @@
                 </select>
             </div>
 
-            <input class="input-c" v-model="newP.sizesInput" placeholder="Размеры (42, 44)" style="margin-bottom: 10px;">
-            <input type="file" @change="handleFileUpload" class="input-c" style="margin-bottom: 10px; font-size: 10px;">
+            <input class="input-c" v-model="newP.sizesInput" placeholder="Размеры через запятую (42, 44, 46)" style="margin-bottom: 10px;">
+
+            <div style="margin-bottom: 10px; font-size: 11px; background: #f9f9f9; padding: 8px; border-radius: 10px;">
+                <span style="font-weight: 700;">Куда загрузить фото?</span>
+                <div style="display: flex; gap: 15px; margin-top: 5px;">
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" v-model="uploadSource" value="firebase"> Firebase
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" v-model="uploadSource" value="imgbb"> ImgBB
+                    </label>
+                </div>
+            </div>
+
+            <input type="file" @change="handleFileUpload" class="input-c" style="margin-bottom: 10px; font-size: 10px;" accept="image/*">
             
             <button class="buy-btn" @click="addProduct" :disabled="uploading">
-                <span v-if="uploading">ЗАГРУЗКА...</span>
-                <span v-else>ОПУБЛИКОВАТЬ</span>
+                <span v-if="uploading">⏳ ИДЕТ ЗАГРУЗКА...</span>
+                <span v-else>🚀 ОПУБЛИКОВАТЬ</span>
             </button>
         </div>
+
+        <div style="background: #fff; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <h4 style="margin-top: 0; font-size: 14px;">📝 Управление товарами ({{ products.length }})</h4>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <div v-for="p in products" :key="p.id" 
+                     style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                    
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img :src="p.images ? p.images[0] : ''" style="width: 40px; height: 50px; object-fit: cover; border-radius: 8px;">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; max-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ p.name }}</div>
+                            <div style="font-size: 10px; color: var(--accent);">{{ p.price }} ₽</div>
+                        </div>
+                    </div>
+
+                    <button @click="toggleHide(p)" 
+                            :style="{ background: p.hidden ? '#ff4444' : '#50b183' }"
+                            style="border: none; color: white; padding: 6px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; min-width: 85px;">
+                        {{ p.hidden ? '👁 СКРЫТ' : '👁 ПОКАЗАН' }}
+                    </button>
+                </div>
+                <div v-if="products.length === 0" style="text-align: center; color: #ccc; font-size: 12px; padding: 20px;">
+                    В базе еще нет товаров
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
     <div v-if="selP" class="modal">
         <button class="close-m" @click="selP = null">✕</button>
@@ -408,6 +443,8 @@
                 newP: { name: '', price: '', img: '', category: '', desc: '', sizesInput: '42, 44, 46', sizes: [] },
                 adminId: 387881523,
                 isAdmin: false,
+                uploadSource: 'firebase',
+                imgbbKey: '839e62907e9a52f0159461b7771bcb2f',
                 showMenu: false,
                 activeInfo: null,
                 activeTab: 'catalog',
@@ -483,26 +520,41 @@
                 this.cart = this.cart.filter(i => i.cartId !== id);
                 localStorage.setItem('mimi_cart', JSON.stringify(this.cart));
             },
-            async handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+            async handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                this.uploading = true;
+                this.vibrate();
 
-    this.uploading = true;
-    // Создаем путь в Storage
-    const storageRef = window.fbMethods.ref(window.storage, 'products/' + Date.now() + '_' + file.name);
-
-    try {
-        const snapshot = await window.fbMethods.uploadBytes(storageRef, file);
-        const url = await window.fbMethods.getDownloadURL(snapshot.ref);
-        this.newP.img = url; // Сохраняем ссылку на фото в объект товара
-        alert('Фото загружено успешно!');
-    } catch (e) {
-        console.error(e);
-        alert('Ошибка загрузки фото: ' + e.message);
-    } finally {
-        this.uploading = false;
-    }
-},
+                try {
+                    if (this.uploadSource === 'firebase') {
+                        // Вариант Firebase
+                        const sRef = window.fbMethods.ref(window.storage, `products/${Date.now()}_${file.name}`);
+                        await window.fbMethods.uploadBytes(sRef, file);
+                        this.newP.img = await window.fbMethods.getDownloadURL(sRef);
+                    } else {
+                        // Вариант ImgBB
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${this.imgbbKey}`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.newP.img = data.data.url;
+                        } else {
+                            throw new Error(data.error.message);
+                        }
+                    }
+                    alert("Фото загружено!");
+                } catch (e) {
+                    console.error(e);
+                    alert("Ошибка при загрузке фото");
+                } finally {
+                    this.uploading = false;
+                }
+            },
             async addProduct() {
     if (!this.newP.name || !this.newP.price || !this.newP.img || !this.newP.category) {
         alert('Заполните все поля (Название, Цена, Категория и Фото)');
@@ -533,26 +585,21 @@
         alert('Ошибка при сохранении. Проверьте соединение.');
     }
 },
-async toggleHideProduct(p) {
-    this.vibrate();
-    try {
-        // Если это товар из Firebase (у него id — строка)
-        if (typeof p.id === 'string') {
-            const docRef = window.fbMethods.doc(window.db, "products", p.id);
-            await window.fbMethods.updateDoc(docRef, {
-                hidden: !p.hidden
-            });
-        } else {
-            // Если это локальный товар из массива в коде
-            p.hidden = !p.hidden;
-            // Чтобы сохранить состояние локальных товаров, нужно обновить localStorage
-            localStorage.setItem('naran_products', JSON.stringify(this.products));
-        }
-    } catch (e) {
-        console.error("Ошибка при скрытии товара:", e);
-        alert("Не удалось изменить видимость");
-    }
-},
+async toggleHide(product) {
+                this.vibrate();
+                if (!product.id) {
+                    alert("Этот товар встроен в код. Скрывать можно только товары из базы.");
+                    return;
+                }
+                try {
+                    const pRef = window.fbMethods.doc(window.db, "products", product.id);
+                    await window.fbMethods.updateDoc(pRef, {
+                        hidden: !product.hidden
+                    });
+                } catch (e) {
+                    alert("Ошибка базы данных");
+                }
+            },
             initMap() {
     this.$nextTick(() => {
         setTimeout(() => {
