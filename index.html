@@ -579,25 +579,31 @@
 },
 async toggleHideProduct(p) {
     try {
-        // Мы используем 'p', так как это имя переменной в скобках выше
+        // Мы используем 'p', потому что оно указано в скобках выше
         if (p && p.id && typeof p.id === 'string') {
             const newStatus = !p.hidden;
+            
+            // Ссылка на документ в Firebase
             const docRef = window.fbMethods.doc(window.db, "products", p.id);
             
+            // Обновляем в базе данных
             await window.fbMethods.updateDoc(docRef, {
                 hidden: newStatus
             });
             
-            p.hidden = newStatus; // Обновляем в интерфейсе
+            // Обновляем на экране сразу
+            p.hidden = newStatus;
+            
+            // Вибрация телефона (успех)
             tg.HapticFeedback.notificationOccurred('success');
         } else {
-            // Для товаров, прописанных вручную в коде
+            // Для ручных товаров (если нет ID из базы)
             p.hidden = !p.hidden;
             tg.HapticFeedback.impactOccurred('light');
         }
     } catch (e) {
         console.error("Ошибка Firebase:", e);
-        alert("Ошибка при сохранении: " + e.message);
+        alert("Не удалось скрыть товар: " + e.message);
     }
 },
             initMap() {
