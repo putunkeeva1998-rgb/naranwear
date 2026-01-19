@@ -747,26 +747,30 @@ locateMe() {
             }
         },
         
-        mounted() {
+       mounted() {
     tg.ready();
     tg.expand();
-    
-    // Определение админа
-    if (window.fbMethods && window.db) {
-        const productsRef = window.fbMethods.collection(window.db, "products");
-        const q = window.fbMethods.query(productsRef, window.fbMethods.orderBy("createdAt", "desc"));
 
-        window.fbMethods.onSnapshot(q, (snapshot) => {
-            this.products = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            console.log("Товары загружены:", this.products.length);
-        }, (error) => {
-            console.error("Ошибка Firebase:", error);
-        });
-    } else {
-        console.error("Ошибка: Firebase методы не найдены! Проверь подключение скриптов в index.html");
+    // Даем базе полсекунды, чтобы прогрузиться, прежде чем запрашивать товары
+    setTimeout(() => {
+        if (window.fbMethods && window.db) {
+            const productsRef = window.fbMethods.collection(window.db, "products");
+            // Слушаем изменения в реальном времени
+            window.fbMethods.onSnapshot(productsRef, (snapshot) => {
+                this.products = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                console.log("Успех! Товаров загружено:", this.products.length);
+            });
+        } else {
+            console.error("Firebase всё еще не доступен. Проверь порядок подключения скриптов!");
+        }
+    }, 500); 
+
+    // Твой старый код определения админа
+    if (tg.initDataUnsafe?.user) {
+        // ... (оставь как было)
     }
 }
 
