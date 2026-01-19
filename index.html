@@ -198,8 +198,6 @@
         style="position: absolute; top: 10px; left: 10px; z-index: 9999; background: #ff4444; border: 2px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; padding: 0;">
     <span style="font-size: 22px;">{{ p.hidden ? '👁️‍🗨️' : '👁️' }}</span>
 </button>
-
-<img :src="p.images ? p.images[0] : p.img" style="width: 100%; aspect-ratio: 3/4; object-fit: cover;">
     
     <div v-if="p.hidden && activeTab === 'admin'" 
          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; border-radius: 24px;">
@@ -571,36 +569,31 @@
                 }
             },
             async addProduct() {
-                this.vibrate();
-    
-    // Проверка 1: Имя товара
-    if (!this.newP.name) return alert("Введите название товара!");
-    // Проверка 2: Фото
-    if (!this.newP.img) return alert("Сначала загрузите фото и дождитесь подтверждения!");
+                try {
+        if (!this.newP.img) {
+            alert("Сначала загрузите фото!");
+            return;
+        }
 
-    try {
         const productData = {
-            name: this.newP.name,
-            price: Number(this.newP.price) || 0,
+            title: this.newP.title,
+            price: Number(this.newP.price),
             category: this.newP.category,
-            desc: this.newP.desc || "", // Если нет в data, будет ошибка!
-            img: this.newP.img,
+            desc: this.newP.desc || '',
+            // Важно: сохраняем ссылку и в img, и в массив images
+            img: this.newP.img, 
             images: [this.newP.img],
-            sizes: this.newP.sizesInput ? this.newP.sizesInput.split(',').map(s => s.trim()) : ['42'],
+            sizes: [...this.newP.sizes],
             hidden: false,
-            createdAt: window.fbMethods.serverTimestamp() // Проверь, что добавила serverTimestamp в window.fbMethods
+            createdAt: window.fbMethods.serverTimestamp()
         };
 
-        await window.fbMethods.addDoc(
-            window.fbMethods.collection(window.db, "products"), 
-            productData
-        );
-
-        alert("✅ ТОВАР ОПУБЛИКОВАН!");
+        await window.fbMethods.addDoc(window.fbMethods.collection(window.db, "products"), productData);
         
-        // Очистка формы
-        this.newP = { name: '', price: '', category: 'ПИДЖАКИ', img: '', desc: '', sizesInput: '' };
-        
+        alert("Товар успешно добавлен!");
+        // Очистка полей
+        this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
+        this.activeTab = 'shop';
     } catch (e) {
         console.error(e);
         alert("Ошибка при сохранении: " + e.message);
