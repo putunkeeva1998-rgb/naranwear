@@ -453,6 +453,9 @@
                 activeTab: 'catalog',
                 currentCat: 'ПИДЖАКИ',
                 categories: ['ПИДЖАКИ', 'СВИТЕРЫ','КАРДИГАНЫ', 'КОСТЮМЫ', 'ЛОНГСЛИВЫ', 'ФУТБОЛКИ', 'КОРСЕТЫ', 'КУРТКИ', 'ЭКОШУБЫ'],
+                img: '',
+                desc: '',
+                uploading: false,
                 selP: null,
                 deliv: '',
                 address: '',
@@ -559,35 +562,36 @@
                 }
             },
             async addProduct() {
-    if (!this.newP.name || !this.newP.price || !this.newP.img || !this.newP.category) {
-        alert('Заполните все поля (Название, Цена, Категория и Фото)');
-        return;
-    }
+                this.vibrate();
+                if (!this.newP.img) return alert("Сначала загрузите фото!");
 
-    try {
-        // Превращаем строку размеров в массив
-        const sizesArray = this.newP.sizesInput.split(',').map(s => s.trim());
+                try {
+                    // Создаем объект для базы данных
+                    const productData = {
+                        name: this.newP.name || "Без названия",
+                        price: Number(this.newP.price) || 0,
+                        category: this.newP.category,
+                        desc: this.newP.desc || "", // Берем из формы
+                        images: [this.newP.img],
+                        // Превращаем строку "42, 44" в список [42, 44]
+                        sizes: this.newP.sizesInput ? this.newP.sizesInput.split(',').map(s => s.trim()) : ['42'],
+                        hidden: false,
+                        createdAt: window.fbMethods.serverTimestamp()
+                    };
 
-        const productData = {
-            name: this.newP.name,
-            price: Number(this.newP.price),
-            img: this.newP.img,
-            category: this.newP.category,
-            desc: this.newP.desc || '',
-            sizes: sizesArray,
-            createdAt: window.fbMethods.serverTimestamp()
-        };
+                    await window.fbMethods.addDoc(
+                        window.fbMethods.collection(window.db, "products"), 
+                        productData
+                    );
 
-        await window.fbMethods.addDoc(window.fbMethods.collection(window.db, "products"), productData);
-        
-        // Очистка полей после добавления
-        this.newP = { name: '', price: '', img: '', category: '', desc: '', sizesInput: '42, 44, 46', sizes: [] };
-        alert('Товар успешно добавлен!');
-    } catch (e) {
-        console.error("Ошибка при добавлении: ", e);
-        alert('Ошибка при сохранении. Проверьте соединение.');
-    }
-},
+                    alert("ТОВАР ДОБАВЛЕН!");
+                    // Очищаем форму после успеха
+                    this.newP = { name: '', price: '', category: 'ПИДЖАКИ', img: '', desc: '', sizesInput: '' };
+                } catch (e) {
+                    console.error(e);
+                    alert("Ошибка Firebase: " + e.message);
+                }
+            },
 async toggleHide(product) {
                 this.vibrate();
                 if (!product.id) {
