@@ -351,7 +351,7 @@
                      style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
                     
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <img :src="p.images ? p.images[0] : ''" style="width: 40px; height: 50px; object-fit: cover; border-radius: 8px;">
+                        <img :src="p.img" style="width: 40px; height: 50px; object-fit: cover; border-radius: 8px;">
                         <div>
                             <div style="font-size: 11px; font-weight: 700; max-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ p.title }}</div>
                             <div style="font-size: 10px; color: var(--accent);">{{ p.price }} ₽</div>
@@ -553,7 +553,7 @@
             const data = await response.json();
 
             if (data.success) {
-                this.newP.img = data.data.url;
+                this.newP.img = data.data.display_url;
                 alert("✅ Фото успешно загружено в ImgBB!");
             } else {
                 alert("Ошибка ImgBB: " + data.error.message);
