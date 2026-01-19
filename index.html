@@ -538,34 +538,28 @@
     const file = event.target.files[0];
     if (!file) return;
 
-    // Показываем, что загрузка началась (необязательно, но удобно)
-    console.log("Начинаю загрузку в ImgBB...");
-
-    // 1. Создаем "конверт" FormData
+    // ШАГ 1: Создаем "конверт" для файла
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', file); 
 
     try {
-        // 2. Отправляем в ImgBB с твоим ключом
-        const response = await fetch('https://api.imgbb.com/1/upload?key=7664406086782d0292837943d1a8470a', {
+        // ШАГ 2: Отправляем именно formData
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=7664406086782d0292837943d1a8470a`, {
             method: 'POST',
-            body: formData // Отправляем именно упакованный formData
+            body: formData 
         });
 
         const data = await response.json();
 
         if (data.success) {
-            // 3. Сохраняем прямую ссылку на фото
+            // ШАГ 3: Сохраняем прямую ссылку
             this.newP.img = data.data.url; 
-            console.log("Ссылка получена:", this.newP.img);
-            alert("Фото успешно загружено в облако! Теперь можно публиковать.");
+            alert("Фото успешно загружено в облако!");
         } else {
-            console.error("Ошибка ImgBB:", data.error);
-            alert("Облако отклонило файл: " + data.error.message);
+            alert("Ошибка облака: " + data.error.message);
         }
     } catch (e) {
-        console.error("Ошибка сети:", e);
-        alert("Проблема с интернетом или сервером ImgBB");
+        alert("Ошибка сети при загрузке фото");
     }
 },
             async addProduct() {
