@@ -12,11 +12,11 @@
     <style>
         :root { 
             --accent: #e0dbda; /* Насыщенный розовый */
-            --bg: #ffffff; /* Нежно-розовый фон */
+            --bg: #b18383; /* Нежно-розовый фон */
             --card-bg: #ffffff;
             --dark: #2d2d2d; 
-            --gray: #775d5d; 
-            --red: #523434; 
+            --gray: #a0a0a0; 
+            --red: #b15252; 
             --light-pink: rgba(255, 133, 162, 0.1); 
         }
 
@@ -300,7 +300,7 @@
         </div>
 
         <div v-if="activeTab === 'profile'">
-    <div style="text-align: center; padding: 30px 0;">Загружено товаров: {{ products.length }}</div>
+    <div style="text-align: center; padding: 30px 0;">
         <img :src="user.photo || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent); padding: 3px;">
         <h2 style="margin-top: 10px;">{{user.first_name}}</h2>
         <p style="font-size: 12px; color: var(--gray); margin-bottom: 15px;">Клиент NARAN</p>
@@ -413,7 +413,7 @@
 </div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
   const firebaseConfig = {
@@ -431,7 +431,7 @@
 
   window.db = db;
   window.storage = storage;
-  window.fbMethods = { collection, addDoc, onSnapshot, query, orderBy, ref, uploadBytes, getDownloadURL, doc, updateDoc, deleteDoc, serverTimestamp };
+  window.fbMethods = { collection, addDoc, onSnapshot, query, orderBy, ref, uploadBytes, getDownloadURL, doc, updateDoc, deleteDoc };
 </script>
 
 <script>
@@ -443,17 +443,16 @@
             return {
                 uploading: false,      // следит, идет ли загрузка прямо сейчас
                 uploadProgress: 0,
-                uploadSource: 'imgbb',
-                imgbbKey: '839e62907e9a52f0159461b7771bcb2f',
                 newP: { name: '', price: '', img: '', category: '', desc: '', sizesInput: '42, 44, 46', sizes: [] },
                 adminId: 387881523,
                 isAdmin: false,
+                uploadSource: 'firebase',
+                imgbbKey: '839e62907e9a52f0159461b7771bcb2f',
                 showMenu: false,
                 activeInfo: null,
                 activeTab: 'catalog',
                 currentCat: 'ПИДЖАКИ',
                 categories: ['ПИДЖАКИ', 'СВИТЕРЫ','КАРДИГАНЫ', 'КОСТЮМЫ', 'ЛОНГСЛИВЫ', 'ФУТБОЛКИ', 'КОРСЕТЫ', 'КУРТКИ', 'ЭКОШУБЫ'],
-                uploading: false,
                 selP: null,
                 deliv: '',
                 address: '',
@@ -486,26 +485,9 @@
             }
         },
         computed: {
-            filteredProducts() {
-    // Если массив пуст, возвращаем пустой список
-    if (!this.products) return [];
-
-    return this.products.filter(p => {
-        // Приводим всё к нижнему регистру для точного сравнения
-        const productCat = String(p.category || '').toLowerCase();
-        const activeCat = String(this.currentCat || '').toLowerCase();
-
-        // Условие 1: Совпадает ли категория? (Если выбрано 'new', показываем все)
-        const categoryMatch = (activeCat === 'new') || (productCat === activeCat);
-
-        // Условие 2: Должен ли товар быть виден?
-        // Админ видит всё, пользователь — только не скрытые (hidden !== true)
-        if (this.isAdmin) {
-            return categoryMatch;
-        } else {
-            return categoryMatch && p.hidden !== true;
-        }
-    });
+            filteredProducts() { 
+    if (this.activeTab === 'admin') return this.products.filter(p => p.category === this.currentCat);
+    return this.products.filter(p => p.category === this.currentCat && p.hidden !== true);
 },
             favItems() { 
                 return this.favs.map(f => {
@@ -577,38 +559,33 @@
                 }
             },
             async addProduct() {
-                this.vibrate();
-    
-    // Проверка 1: Имя товара
-    if (!this.newP.name) return alert("Введите название товара!");
-    // Проверка 2: Фото
-    if (!this.newP.img) return alert("Сначала загрузите фото и дождитесь подтверждения!");
+    if (!this.newP.name || !this.newP.price || !this.newP.img || !this.newP.category) {
+        alert('Заполните все поля (Название, Цена, Категория и Фото)');
+        return;
+    }
 
     try {
+        // Превращаем строку размеров в массив
+        const sizesArray = this.newP.sizesInput.split(',').map(s => s.trim());
+
         const productData = {
             name: this.newP.name,
-            price: Number(this.newP.price) || 0,
+            price: Number(this.newP.price),
+            img: this.newP.img,
             category: this.newP.category,
-            desc: this.newP.desc || "", // Если нет в data, будет ошибка!
-            images: [this.newP.img],
-            sizes: this.newP.sizesInput ? this.newP.sizesInput.split(',').map(s => s.trim()) : ['42'],
-            hidden: false,
-            createdAt: window.fbMethods.serverTimestamp() // Проверь, что добавила serverTimestamp в window.fbMethods
+            desc: this.newP.desc || '',
+            sizes: sizesArray,
+            createdAt: window.fbMethods.serverTimestamp()
         };
 
-        await window.fbMethods.addDoc(
-            window.fbMethods.collection(window.db, "products"), 
-            productData
-        );
-
-        alert("✅ ТОВАР ОПУБЛИКОВАН!");
+        await window.fbMethods.addDoc(window.fbMethods.collection(window.db, "products"), productData);
         
-        // Очистка формы
-        this.newP = { name: '', price: '', category: 'ПИДЖАКИ', img: '', desc: '', sizesInput: '' };
-        
+        // Очистка полей после добавления
+        this.newP = { name: '', price: '', img: '', category: '', desc: '', sizesInput: '42, 44, 46', sizes: [] };
+        alert('Товар успешно добавлен!');
     } catch (e) {
-        console.error(e);
-        alert("Ошибка при сохранении: " + e.message);
+        console.error("Ошибка при добавлении: ", e);
+        alert('Ошибка при сохранении. Проверьте соединение.');
     }
 },
 async toggleHide(product) {
@@ -789,7 +766,7 @@ locateMe() {
         }));
         
         // Объединяем товары из базы и те, что прописаны вручную (по желанию)
-        this.products = [...this.localProducts, ...fbProducts, ...this.products.filter(p => typeof p.id === 'number' && !fbProducts.find(f => f.name === p.name))];
+        this.products = [...fbProducts, ...this.products.filter(p => typeof p.id === 'number' && !fbProducts.find(f => f.name === p.name))];
     });
 }
     }).mount('#app');
