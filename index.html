@@ -534,39 +534,9 @@
                 this.cart = this.cart.filter(i => i.cartId !== id);
                 localStorage.setItem('mimi_cart', JSON.stringify(this.cart));
             },
-            async handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // ШАГ 1: Создаем тот самый "конверт" (FormData)
-    const formData = new FormData();
-    formData.append('image', file); // Помечаем, что внутри именно картинка
-
-    try {
-        // ШАГ 2: Отправляем конверт в облако
-        const response = await fetch('https://api.imgbb.com/1/upload?key=839e62907e9a52f0159461b7771bcb2f', {
-            method: 'POST',
-            body: formData // ТЕПЕРЬ МЫ ОТПРАВЛЯЕМ КОНВЕРТ, А НЕ ПРОСТО ФАЙЛ
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // ШАГ 3: Сохраняем ПРЯМУЮ ссылку (она заканчивается на .jpg или .png)
-            this.newP.img = data.data.url; 
-            alert("Фото успешно загружено в облако! Теперь жмите 'Опубликовать'");
-        } else {
-            alert("Ошибка ImgBB: " + data.error.message);
-        }
-    } catch (e) {
-        alert("Ошибка сети: не удалось связаться с облаком");
-    }
-},
             async addProduct() {
-    try {
-        // Проверка: загрузил ли админ фото перед нажатием кнопки
         if (!this.newP.img) {
-            alert("Ошибка: Сначала выберите и загрузите фото!");
+            alert("Сначала загрузите фото!");
             return;
         }
 
@@ -574,26 +544,49 @@
             title: this.newP.title,
             price: Number(this.newP.price),
             category: this.newP.category,
-            desc: this.newP.desc || '',
-            img: this.newP.img,        // Прямая ссылка на ImgBB
+            img: this.newP.img,        // Прямая ссылка для каталога
             images: [this.newP.img],   // Массив для слайдера
-            sizes: [...this.newP.sizes],
-            hidden: false,
             createdAt: window.fbMethods.serverTimestamp()
         };
 
-        const docRef = await window.fbMethods.addDoc(
-            window.fbMethods.collection(window.db, "products"), 
-            productData
-        );
-
-        alert("Товар успешно добавлен в магазин!");
+        await window.fbMethods.addDoc(window.fbMethods.collection(window.db, "products"), productData);
+        alert("Товар добавлен!");
         
-        // Очищаем форму
-        this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
-        this.activeTab = 'shop'; // Возвращаемся в магазин
+        // Очистка полей после добавления
+        this.newP = { 
+            title: '', 
+            price: '', 
+            img: '', 
+            sizes: ['42','44','46'], 
+            category: 'dress', 
+            desc: '' 
+        };
+        this.activeTab = 'shop'; // Переключаем обратно на магазин
+    },
+            async handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 1. Создаем "посылку" (FormData)
+    const formData = new FormData();
+    formData.append('image', file); // Важно: имя поля должно быть 'image'
+
+    try {
+        // 2. Отправляем в облако
+        const response = await fetch('https://api.imgbb.com/1/upload?key=839e62907e9a52f0159461b7771bcb2f', {
+            method: 'POST',
+            body: formData // Отправляем упакованную посылку
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 3. Сохраняем ПРЯМУЮ ссылку на картинку
+            this.newP.img = data.data.url; 
+            alert("Фото загружено в облако! Теперь можно нажать 'Опубликовать'");
+        }
     } catch (e) {
-        alert("Ошибка Firebase: " + e.message);
+        alert("Ошибка связи с облаком");
     }
 },
 async toggleHide(product) {
