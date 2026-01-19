@@ -752,30 +752,22 @@ locateMe() {
     tg.expand();
     
     // Определение админа
-    if (tg.initDataUnsafe?.user) {
-        const u = tg.initDataUnsafe.user;
-        this.user = { first_name: u.first_name, photo: u.photo_url };
-        this.form.name = u.first_name;
-        if (Number(u.id) === Number(this.adminId)) {
-            this.isAdmin = true;
-            console.log("Вы вошли как админ");
-            }
-        const savedPhone = localStorage.getItem('naran_user_phone');
-        if (savedPhone) {
-            this.form.phone = savedPhone;
-        }
-    }
+    if (window.fbMethods && window.db) {
+        const productsRef = window.fbMethods.collection(window.db, "products");
+        const q = window.fbMethods.query(productsRef, window.fbMethods.orderBy("createdAt", "desc"));
 
-    // Слушаем базу данных Firebase в реальном времени
-    // 1. Создаем ссылку на коллекцию
-const colRef = window.fbMethods.collection(window.db, "products");
-window.fbMethods.onSnapshot(colRef, (snapshot) => {
-    this.products = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    }));
-    console.log("Товары загружены из Firebase!");
-});
+        window.fbMethods.onSnapshot(q, (snapshot) => {
+            this.products = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            console.log("Товары загружены:", this.products.length);
+        }, (error) => {
+            console.error("Ошибка Firebase:", error);
+        });
+    } else {
+        console.error("Ошибка: Firebase методы не найдены! Проверь подключение скриптов в index.html");
+    }
 }
 
     }).mount('#app');
