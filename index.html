@@ -594,36 +594,43 @@
     },
 
         async addProduct() {
-        if (!this.newP.img) {
-            alert("Сначала загрузите фото!");
-            return;
-        }
+    if (!this.newP.img) {
+        alert("Сначала загрузите фото!");
+        return;
+    }
 
-        this.uploading = true;
-        try {
-            const productData = {
-                title: this.newP.title,
-                price: Number(this.newP.price),
-                category: this.newP.category,
-                img: this.newP.img,        // Ссылка для каталога
-                images: [this.newP.img],   // Ссылка для слайдера
-                sizes: [...this.newP.sizes],
-                desc: this.newP.desc || '',
-                createdAt: window.fbMethods.serverTimestamp()
-            };
+    this.uploading = true;
+    try {
+        // Подготавливаем чистый объект данных
+        const productData = {
+            title: this.newP.title,
+            price: Number(this.newP.price) || 0,
+            category: this.newP.category,
+            img: this.newP.img,
+            images: [this.newP.img],
+            sizes: Array.from(this.newP.sizes), // Превращаем в обычный массив
+            desc: this.newP.desc || '',
+            hidden: false,
+            createdAt: window.fbMethods.serverTimestamp()
+        };
 
-            await window.fbMethods.addDoc(window.fbMethods.collection(window.db, "products"), productData);
-            alert("🚀 Товар успешно добавлен!");
-            
-            // Очистка полей
-            this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
-            this.activeTab = 'shop';
-        } catch (e) {
-            alert("Ошибка базы данных");
-        } finally {
-            this.uploading = false;
-        }
-    },
+        // ВАЖНО: используем window.fbMethods для обращения к базе
+        const colRef = window.fbMethods.collection(window.db, "products");
+        await window.fbMethods.addDoc(colRef, productData);
+
+        alert("✅ Товар успешно опубликован!");
+
+        // Очистка полей и возврат в магазин
+        this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
+        this.activeTab = 'shop';
+
+    } catch (e) {
+        console.error("Полная ошибка:", e);
+        alert("Ошибка базы данных: " + (e.code || e.message));
+    } finally {
+        this.uploading = false;
+    }
+},
 async toggleHide(product) {
                 this.vibrate();
                 if (!product.id) {
