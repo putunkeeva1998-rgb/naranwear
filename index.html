@@ -567,70 +567,68 @@
         const file = event.target.files[0];
         if (!file) return;
 
-        this.uploading = true; // Кнопка пишет "⏳ Идет загрузка..."
+        this.uploading = true; // Блокируем кнопку (появится ⏳)
         const formData = new FormData();
         formData.append('image', file);
 
         try {
-            // ВНИМАНИЕ: Проверь этот URL, он должен быть в одну строку без пробелов
+            // ИСПОЛЬЗУЕМ ТВОЙ КЛЮЧ СО СКРИНШОТА
             const response = await fetch('https://api.imgbb.com/1/upload?key=839e62907e9a52f0159461b7771bcb2f', {
                 method: 'POST',
                 body: formData
             });
-
             const data = await response.json();
 
             if (data.success) {
-                this.newP.img = data.data.url; // Сохраняем прямую ссылку
-                alert("✅ Фото загружено в облако!");
+                this.newP.img = data.data.url;
+                alert("✅ Фото успешно загружено в ImgBB!");
             } else {
                 alert("Ошибка ImgBB: " + data.error.message);
             }
         } catch (e) {
-            alert("Ошибка сети: проверьте адрес API");
+            alert("Ошибка сети при загрузке фото");
         } finally {
-            this.uploading = false; // Кнопка снова станет "Опубликовать"
+            this.uploading = false; // Кнопка снова активна
         }
     },
 
         async addProduct() {
-    if (!this.newP.img) {
-        alert("Сначала загрузите фото!");
-        return;
-    }
+        if (!this.newP.img) {
+            alert("Сначала выберите и загрузите фото!");
+            return;
+        }
 
-    this.uploading = true;
-    try {
-        // Подготавливаем чистый объект данных
-        const productData = {
-            title: this.newP.title,
-            price: Number(this.newP.price) || 0,
-            category: this.newP.category,
-            img: this.newP.img,
-            images: [this.newP.img],
-            sizes: Array.from(this.newP.sizes), // Превращаем в обычный массив
-            desc: this.newP.desc || '',
-            hidden: false,
-            createdAt: window.fbMethods.serverTimestamp()
-        };
+        this.uploading = true;
+        try {
+            // Подготавливаем чистые данные для Firebase
+            const productData = {
+                title: this.newP.title,
+                price: Number(this.newP.price) || 0,
+                category: this.newP.category,
+                img: this.newP.img,
+                images: [this.newP.img], // Обязательно массив для слайдера
+                sizes: Array.from(this.newP.sizes), // Очистка массива Vue
+                desc: this.newP.desc || '',
+                hidden: false,
+                createdAt: window.fbMethods.serverTimestamp()
+            };
 
-        // ВАЖНО: используем window.fbMethods для обращения к базе
-        const colRef = window.fbMethods.collection(window.db, "products");
-        await window.fbMethods.addDoc(colRef, productData);
+            // Отправка в Firebase
+            const colRef = window.fbMethods.collection(window.db, "products");
+            await window.fbMethods.addDoc(colRef, productData);
 
-        alert("✅ Товар успешно опубликован!");
-
-        // Очистка полей и возврат в магазин
-        this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
-        this.activeTab = 'shop';
-
-    } catch (e) {
-        console.error("Полная ошибка:", e);
-        alert("Ошибка базы данных: " + (e.code || e.message));
-    } finally {
-        this.uploading = false;
-    }
-},
+            alert("🚀 Товар опубликован успешно!");
+            
+            // Сброс формы и переход в магазин
+            this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
+            this.activeTab = 'shop';
+        } catch (e) {
+            console.error(e);
+            alert("Ошибка базы данных: " + e.message);
+        } finally {
+            this.uploading = false;
+        }
+    },
 async toggleHide(product) {
                 this.vibrate();
                 if (!product.id) {
