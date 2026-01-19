@@ -751,23 +751,23 @@ locateMe() {
     tg.ready();
     tg.expand();
 
-    // Проверяем наличие методов каждые 100мс, пока они не появятся
+    // 1. Код загрузки товаров (который ты уже вставила)
     const checkFirebase = setInterval(() => {
         if (window.fbMethods && window.db) {
-            clearInterval(checkFirebase); // Останавливаем проверку
-            
-            const colRef = window.fbMethods.collection(window.db, "products");
-            window.fbMethods.onSnapshot(colRef, (snapshot) => {
-                this.products = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                console.log("✅ База подключена, товаров:", this.products.length);
-            });
+            clearInterval(checkFirebase);
+            // ... тут твой код onSnapshot ...
         }
     }, 100);
-    
-    // Твой код для админа...
+
+    // 2. КОД ОПРЕДЕЛЕНИЯ АДМИНА (Проверь, чтобы он был тут!)
+    if (tg.initDataUnsafe?.user) {
+        const u = tg.initDataUnsafe.user;
+        // Твой ID должен совпадать с тем, что в adminId
+        if (Number(u.id) === Number(this.adminId)) {
+            this.isAdmin = true;
+            console.log("Админ авторизован!");
+        }
+    }
 }
 
     }).mount('#app');
