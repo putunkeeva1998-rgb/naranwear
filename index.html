@@ -413,7 +413,7 @@
 </div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
   const firebaseConfig = {
@@ -431,7 +431,7 @@
 
   window.db = db;
   window.storage = storage;
-  window.fbMethods = { collection, addDoc, onSnapshot, query, orderBy, ref, uploadBytes, getDownloadURL, doc, updateDoc, deleteDoc };
+  window.fbMethods = { collection, addDoc, onSnapshot, query, orderBy, ref, uploadBytes, getDownloadURL, doc, updateDoc, deleteDoc, serverTimestamp };
 </script>
 
 <script>
