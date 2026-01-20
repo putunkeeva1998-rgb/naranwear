@@ -223,8 +223,8 @@
     <div class="size-btns">
         <button v-for="s in p.sizes" 
                 :key="s"
-                @click="p.selS = s; vibrate()" 
-                :class="['s-btn', p.selS === s ? 'active' : '']">
+                @click="p.selectedSize = s; vibrate()" 
+                :class="['s-btn', p.selectedSize === s ? 'active' : '']">
             {{s}}
         </button>
     </div>
@@ -253,7 +253,7 @@
                     </div>
                     <div class="card-info">
                         <div class="card-price">{{p.price}} ₽</div>
-                        <div style="font-size: 10px; color: var(--gray); margin-bottom: 8px; font-weight: 700;">Размер: {{p.selS}}</div>
+                        <div style="font-size: 10px; color: var(--gray); margin-bottom: 8px; font-weight: 700;">Размер: {{p.selectedSize}}</div>
                         <button class="buy-btn" @click="addToCart(p)">В корзину</button>
                     </div>
                 </div>
@@ -386,7 +386,7 @@
             <div style="font-size: 24px; color: var(--accent); font-weight: 800; margin: 10px 0;">{{selP.price}} ₽</div>
             <p style="font-size: 13px; color: #666; line-height: 1.6;">{{selP.desc}}</p>
             <div class="size-btns" style="margin: 25px 0;">
-                <button v-for="s in selP.sizes" @click="selP.selS = s; vibrate()" :class="['s-btn', selP.selS === s ? 'active' : '']" style="padding: 15px;">{{s}}</button>
+                <button v-for="s in selP.sizes" @click="selp.selectedSize = s; vibrate()" :class="['s-btn', selp.selectedSize === s ? 'active' : '']" style="padding: 15px;">{{s}}</button>
             </div>
             <button class="order-btn" @click="addToCart(selP)">В корзину</button>
         </div>
@@ -452,7 +452,6 @@
                 activeTab: 'catalog',
                 currentCat: '',
                 categories: ['пиджаки', 'свитеры','кардиганы', 'костюмы', 'лонгсливы', 'футболки', 'корсеты', 'куртки', 'экошубы'],
-                uploading: false,
                 selP: null,
                 deliv: '',
                 address: '',
@@ -470,15 +469,16 @@
             computed: {
         // Фильтрация товаров для каталога (с исправлением регистра букв)
         filteredProducts() {
-            if (!this.products) return [];
-            return this.products.filter(p => {
-                const pCat = (p.category || '').trim().toUpperCase();
-                const cCat = (this.currentCat || '').trim().toUpperCase();
-                const catMatch = !this.currentCat || pCat === cCat;
-                const visMatch = this.isAdmin || !p.hidden;
-                return catMatch && visMatch;
-            });
-        },
+    if (!this.products) return [];
+    return this.products.filter(p => {
+        // Приведение к нижнему регистру для надежности
+        const pCat = (p.category || '').toLowerCase();
+        const cCat = (this.currentCat || '').toLowerCase();
+        const catMatch = !this.currentCat || pCat === cCat;
+        const visMatch = this.isAdmin || !p.hidden;
+        return catMatch && visMatch;
+    });
+},
 
         // Список избранного: сопоставляет ID из памяти с реальными товарами и их размерами
         favItems() {
@@ -569,7 +569,7 @@
                 localStorage.setItem('mimi_favs', JSON.stringify(this.favorites));
             },
 
-            removeFromCart(index) {
+            removeC(cartId) {
                 this.cart.splice(index, 1);
                 this.saveCart();
             },
@@ -622,8 +622,8 @@
                     const colRef = window.fbMethods.collection(window.db, "products");
                     await window.fbMethods.addDoc(colRef, productData);
                     tg.showAlert("🚀 Товар опубликован!");
-                    this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
-                    this.curr = 'main'; // Возврат на главную
+                    this.newP = { title: '', price: '', img: '', sizesInput: '42, 44, 46', category: 'пиджаки', desc: '' };
+                    this.activeTab = 'catalog';
                 } catch (e) {
                     console.error(e);
                     tg.showAlert("Ошибка базы данных");
@@ -772,8 +772,8 @@ locateMe() {
                 };
                 tg.sendData(JSON.stringify(orderData));
                 localStorage.removeItem('mimi_cart');
-                this.cart = [];
-                setTimeout(() => { tg.close(); }, 150);
+                this.cart = this.cart.filter(item => item.cartId !== cartId);
+    this.saveCart();
             }
         },
         
