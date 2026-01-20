@@ -466,157 +466,183 @@
                 cart: JSON.parse(localStorage.getItem('mimi_cart')) || []
             }
         },
+
             computed: {
-           filteredProducts() {
-    if (!this.products) return []; // Обязательная защита!
-    return this.products.filter(p => {
-        const catMatch = !this.currentCat || p.category === this.currentCat;
-        const visMatch = this.isAdmin || !p.hidden;
-        return catMatch && visMatch;
-    });
-},
-            favItems() { 
-                if (!this.favorites) return []; // Защита от ошибки 'map'
-                return this.products.filter(p => this.favorites.includes(p.id));
-            },
-            total() { 
-                if (!this.cart || !Array.isArray(this.cart)) return 0;
-    return this.cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-            },
-            
-            isValid() { return this.form.name.length > 2 && this.form.phone.length > 9 && this.address && this.cart.length > 0; 
-            }
-        },
-        methods: {
-            vibrate() { tg.HapticFeedback.impactOccurred('medium'); },
-            handleScroll(e, p) { p.aIdx = Math.round(e.target.scrollLeft / e.target.offsetWidth); },
-            toggleFav(p) {
-                this.vibrate();
-                const idx = this.favs.findIndex(f => f.id === p.id && f.size === p.selS);
-                if (idx > -1) { this.favs.splice(idx, 1); } 
-                else { this.favs.push({ id: p.id, size: p.selS }); }
-                localStorage.setItem('mimi_favs', JSON.stringify(this.favs));
-            },
-            isFav(p) { return this.favs.some(f => f.id === p.id && f.size === p.selS); },
-            openP(p) { this.vibrate(); this.selP = p; },
-            addToCart(p) {
-                this.vibrate();
-                this.cart.push({ cartId: Date.now(), name: p.title, price: p.price, size: p.selS, img: p.images[0] });
-                localStorage.setItem('mimi_cart', JSON.stringify(this.cart));
-                this.selP = null;
-            },
-            removeC(id) { 
-                this.cart = this.cart.filter(i => i.cartId !== id);
-                localStorage.setItem('mimi_cart', JSON.stringify(this.cart));
-            },
-            async addProduct() {
-    if (!this.newP.img) {
-        alert("Сначала загрузите фото!");
-        return;
-    }
-
-    this.uploading = true; // Снова блокируем, чтобы не нажали дважды
-    try {
-        const productData = {
-            title: this.newP.title,
-            price: Number(this.newP.price),
-            img: this.newP.img,
-            images: [this.newP.img], // Обязательно массив!
-            category: this.newP.category,
-            createdAt: window.fbMethods.serverTimestamp()
-        };
-
-        await window.fbMethods.addDoc(window.fbMethods.collection(window.db, "products"), productData);
-        alert("Товар опубликован!");
-        
-        // Очищаем и возвращаемся в магазин
-        this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
-        this.activeTab = 'shop';
-    } catch (e) {
-        alert("Ошибка Firebase");
-    } finally {
-        this.uploading = false; // РАЗБЛОКИРУЕМ кнопку
-    }
-},
-            async handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        this.uploading = true; // Блокируем кнопку (появится ⏳)
-        const formData = new FormData();
-        formData.append('image', file);
-
-        try {
-            // ИСПОЛЬЗУЕМ ТВОЙ КЛЮЧ СО СКРИНШОТА
-            const response = await fetch('https://api.imgbb.com/1/upload?key=839e62907e9a52f0159461b7771bcb2f', {
-                method: 'POST',
-                body: formData
+        // Фильтрация товаров для каталога (с исправлением регистра букв)
+        filteredProducts() {
+            if (!this.products) return [];
+            return this.products.filter(p => {
+                const pCat = (p.category || '').trim().toUpperCase();
+                const cCat = (this.currentCat || '').trim().toUpperCase();
+                const catMatch = !this.currentCat || pCat === cCat;
+                const visMatch = this.isAdmin || !p.hidden;
+                return catMatch && visMatch;
             });
-            const data = await response.json();
+        },
 
-            if (data.success) {
-                this.newP.img = data.data.display_url;
-                alert("✅ Фото успешно загружено в ImgBB!");
-            } else {
-                alert("Ошибка ImgBB: " + data.error.message);
-            }
-        } catch (e) {
-            alert("Ошибка сети при загрузке фото");
-        } finally {
-            this.uploading = false; // Кнопка снова активна
+        // Список избранного: сопоставляет ID из памяти с реальными товарами и их размерами
+        favItems() {
+            if (!this.favorites || !this.products) return [];
+            return this.favorites.map(fav => {
+                // Если в избранном просто ID, ищем его, если объект {id, size} — вытаскиваем id
+                const fId = fav.id || fav;
+                const product = this.products.find(p => p.id === fId);
+                if (!product) return null;
+                // Возвращаем копию товара, подставляя сохраненный размер (если он есть)
+                return { ...product, selectedSize: fav.size || '' };
+            }).filter(item => item !== null);
+        },
+
+        // Расчет общей суммы в корзине (исправлен синтаксис)
+        total() {
+            if (!this.cart || !Array.isArray(this.cart)) return 0;
+            return this.cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+        },
+
+        // Проверка готовности формы к отправке
+        isValid() {
+            return this.form.name.length > 2 && 
+                   this.form.phone.length > 9 && 
+                   this.cart.length > 0;
         }
     },
 
-        async addProduct() {
-    if (!this.newP.img) {
-        alert("Сначала загрузите фото!");
-        return;
-    }
+        methods: {
+            vibrate() { tg.HapticFeedback.impactOccurred('medium'); },
+            
+            handleScroll(e, p) { 
+                p.aIdx = Math.round(e.target.scrollLeft / e.target.offsetWidth); 
+            },
 
-    this.uploading = true;
-    try {
-        // СОЗДАЕМ ЧИСТЫЙ ОБЪЕКТ БЕЗ ПРИВЯЗОК VUE
-        const productData = {
-            title: String(this.newP.title), // Превращаем в строку
-            price: Number(this.newP.price) || 0, // Превращаем в число
-            category: String(this.newP.category),
-            img: String(this.newP.img),
-            images: [String(this.newP.img)],
-            sizes: Array.from(this.newP.sizes), // Важно: делаем обычный массив из Proxy
-            desc: String(this.newP.desc || ''),
-            hidden: false,
-            createdAt: window.fbMethods.serverTimestamp()
-        };
+            // ИСПРАВЛЕНО: Один универсальный метод для избранного
+            toggleFav(p) {
+                this.vibrate();
+                // Ищем по ID и выбранному размеру
+                const idx = this.favorites.findIndex(f => (f.id || f) === p.id);
+                if (idx > -1) { 
+                    this.favorites.splice(idx, 1); 
+                } else { 
+                    this.favorites.push({ id: p.id, size: p.selectedSize || 'Не выбран' }); 
+                }
+                localStorage.setItem('mimi_favs', JSON.stringify(this.favorites));
+            },
 
-        console.log("Отправляем чистые данные:", productData);
+            isFav(p) { 
+                return this.favorites.some(f => (f.id || f) === p.id); 
+            },
 
-        const colRef = window.fbMethods.collection(window.db, "products");
-        await window.fbMethods.addDoc(colRef, productData);
+            openP(p) { 
+                this.vibrate(); 
+                this.selP = p; 
+            },
 
-        alert("🚀 УРА! Товар опубликован!");
-        
-        this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
-        this.activeTab = 'shop';
+            selectSize(p, s) {
+                p.selectedSize = s;
+            },
 
-    } catch (e) {
-        console.error("Полная ошибка:", e);
-        alert("Ошибка базы данных: " + e.code);
-    } finally {
-        this.uploading = false;
-    }
-},
-async toggleHide(product) {
-    try {
-        const productRef = window.fbMethods.doc(window.db, "products", product.id);
-        await window.fbMethods.updateDoc(productRef, {
-            hidden: !product.hidden // Меняет true на false и наоборот
-        });
-        // Вибрация для подтверждения (опционально)
-        if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-    } catch (e) {
-        console.error("Ошибка обновления:", e);
-    }
-},
+            // КОРРЕКТНОЕ ДОБАВЛЕНИЕ В КОРЗИНУ
+            addToCart(p) {
+                if (!p.selectedSize) {
+                    tg.showAlert("Пожалуйста, выберите размер!");
+                    return;
+                }
+                const itemToCart = { 
+                    ...p, 
+                    cartId: Date.now() + Math.random(), 
+                    selectedSize: p.selectedSize 
+                };
+                this.cart.push(itemToCart);
+                this.saveCart();
+                tg.HapticFeedback.notificationOccurred('success');
+            },
+
+            saveCart() {
+                localStorage.setItem('mimi_cart', JSON.stringify(this.cart));
+            },
+
+            saveFavs() {
+                localStorage.setItem('mimi_favs', JSON.stringify(this.favorites));
+            },
+
+            removeFromCart(index) {
+                this.cart.splice(index, 1);
+                this.saveCart();
+            },
+
+            // ЗАГРУЗКА ФОТО (ImgBB)
+            async handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                this.uploading = true;
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('https://api.imgbb.com/1/upload?key=839e62907e9a52f0159461b7771bcb2f', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        this.newP.img = data.data.display_url;
+                        tg.showAlert("✅ Фото загружено!");
+                    }
+                } catch (e) {
+                    tg.showAlert("Ошибка загрузки фото");
+                } finally {
+                    this.uploading = false;
+                }
+            },
+
+            // ДОБАВЛЕНИЕ ТОВАРА (Firebase)
+            async addProduct() {
+                if (!this.newP.img) {
+                    tg.showAlert("Сначала загрузите фото!");
+                    return;
+                }
+                this.uploading = true;
+                try {
+                    const productData = {
+                        title: String(this.newP.title),
+                        price: Number(this.newP.price) || 0,
+                        category: String(this.newP.category),
+                        img: String(this.newP.img),
+                        images: [String(this.newP.img)],
+                        sizes: Array.from(this.newP.sizes || ['42','44','46']),
+                        desc: String(this.newP.desc || ''),
+                        hidden: false,
+                        createdAt: window.fbMethods.serverTimestamp()
+                    };
+                    const colRef = window.fbMethods.collection(window.db, "products");
+                    await window.fbMethods.addDoc(colRef, productData);
+                    tg.showAlert("🚀 Товар опубликован!");
+                    this.newP = { title: '', price: '', img: '', sizes: ['42','44','46'], category: 'dress', desc: '' };
+                    this.curr = 'main'; // Возврат на главную
+                } catch (e) {
+                    console.error(e);
+                    tg.showAlert("Ошибка базы данных");
+                } finally {
+                    this.uploading = false;
+                }
+            },
+
+            async deleteProduct(id) {
+                if (confirm('Удалить товар?')) {
+                    const docRef = window.fbMethods.doc(window.db, "products", id);
+                    await window.fbMethods.deleteDoc(docRef);
+                }
+            },
+
+            async toggleHide(product) {
+                try {
+                    const productRef = window.fbMethods.doc(window.db, "products", product.id);
+                    await window.fbMethods.updateDoc(productRef, { hidden: !product.hidden });
+                    this.vibrate();
+                } catch (e) {
+                    console.error(e);
+                }
+            },
             initMap() {
     this.$nextTick(() => {
         setTimeout(() => {
