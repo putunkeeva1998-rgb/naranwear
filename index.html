@@ -364,7 +364,7 @@
                         {{ p.hidden ? '👁 СКРЫТ' : '👁 ПОКАЗАН' }}
                     </button>
                 </div>
-                <div v-if="!filteredProducts || filteredProducts.length === 0">
+                <div v-if="!filteredProducts || filteredProducts.length === 0" style="text-align: center; color: #ccc; font-size: 12px; padding: 20px;">
                     В базе еще нет товаров
                 </div>
             </div>
@@ -467,21 +467,21 @@
         computed: {
             computed: {
     filteredProducts() {
-        // Защита: если данных нет, возвращаем пустой массив, чтобы .length не выдавал ошибку
-        if (!this.products || !Array.isArray(this.products)) return [];
+    // Если товаров еще нет, просто возвращаем пустой список, чтобы не было ошибки .length
+    if (!this.products || !Array.isArray(this.products)) return [];
 
-        return this.products.filter(p => {
-            // 1. Фильтр по категории (приводим к одному регистру)
-            const categoryMatch = !this.currentCat || 
-                p.category?.trim().toUpperCase() === this.currentCat.trim().toUpperCase();
-            
-            // 2. Фильтр по видимости: 
-            // Показываем всё админу, но только открытое (hidden: false) покупателям
-            const visibilityMatch = this.isAdmin || !p.hidden;
+    return this.products.filter(p => {
+        // Проверка категории (приводим к заглавным буквам, как в Firebase)
+        const pCat = (p.category || '').trim().toUpperCase();
+        const cCat = (this.currentCat || '').trim().toUpperCase();
+        const categoryMatch = !this.currentCat || pCat === cCat;
+        
+        // Скрываем скрытые товары (hidden: true) от обычных пользователей
+        const visibilityMatch = this.isAdmin || !p.hidden;
 
-            return categoryMatch && visibilityMatch;
-        });
-    }
+        return categoryMatch && visibilityMatch;
+    });
+}
 },
             favItems() { 
                 return this.favs.map(f => {
