@@ -537,24 +537,26 @@
             },
 
             selectSize(p, s) {
-                p.selectedSize = s;
+                this.vibrate();
+            p.selectedSize = s; // Устанавливаем размер конкретному товару
             },
 
             // КОРРЕКТНОЕ ДОБАВЛЕНИЕ В КОРЗИНУ
             addToCart(p) {
-                if (!p.selectedSize) {
-                    tg.showAlert("Пожалуйста, выберите размер!");
-                    return;
-                }
-                const itemToCart = { 
-                    ...p, 
-                    cartId: Date.now() + Math.random(), 
-                    selectedSize: p.selectedSize 
-                };
-                this.cart.push(itemToCart);
-                this.saveCart();
-                tg.HapticFeedback.notificationOccurred('success');
-            },
+    if (!p.selectedSize) {
+        tg.showAlert("Пожалуйста, выберите размер!");
+        return;
+    }
+    // Создаем копию товара с фиксированным размером для корзины
+    const itemToCart = { 
+        ...p, 
+        cartId: Date.now() + Math.random(), 
+        selectedSize: p.selectedSize 
+    };
+    this.cart.push(itemToCart);
+    this.saveCart();
+    tg.HapticFeedback.notificationOccurred('success');
+},
 
             saveCart() {
                 localStorage.setItem('mimi_cart', JSON.stringify(this.cart));
