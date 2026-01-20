@@ -364,7 +364,7 @@
                         {{ p.hidden ? '👁 СКРЫТ' : '👁 ПОКАЗАН' }}
                     </button>
                 </div>
-                <div v-if="!filteredProducts || filteredProducts.length === 0" style="text-align: center; color: #ccc; font-size: 12px; padding: 20px;">
+                <div v-if="filteredProducts && filteredProducts.length === 0" style="text-align: center; color: #ccc;">
                     В базе еще нет товаров
                 </div>
             </div>
@@ -444,7 +444,7 @@
                 uploadProgress: 0,
                 uploadSource: 'imgbb',
                 imgbbKey: '839e62907e9a52f0159461b7771bcb2f',
-                newP: { name: '', price: '', img: '', category: '', desc: '', sizesInput: '42, 44, 46', sizes: [] },
+                newP: { title: '', price: '', img: '', category: '', desc: '', sizesInput: '42, 44, 46', sizes: [] },
                 adminId: 387881523,
                 isAdmin: false,
                 showMenu: false,
@@ -461,36 +461,24 @@
                 selectedPVZ: null,
                 user: { first_name: 'Покупатель', photo: '' },
                 form: { name: '', phone: '' },
-                products: []
+                products: [],
+                favorites: []
             }
         },
         computed: {
             computed: {
     filteredProducts() {
-    // Если товаров еще нет, просто возвращаем пустой список, чтобы не было ошибки .length
-    if (!this.products || !Array.isArray(this.products)) return [];
-
+    if (!this.products) return []; // Обязательная защита!
     return this.products.filter(p => {
-        // Проверка категории (приводим к заглавным буквам, как в Firebase)
-        const pCat = (p.category || '').trim().toUpperCase();
-        const cCat = (this.currentCat || '').trim().toUpperCase();
-        const categoryMatch = !this.currentCat || pCat === cCat;
-        
-        // Скрываем скрытые товары (hidden: true) от обычных пользователей
-        const visibilityMatch = this.isAdmin || !p.hidden;
-
-        return categoryMatch && visibilityMatch;
+        const catMatch = !this.currentCat || p.category === this.currentCat;
+        const visMatch = this.isAdmin || !p.hidden;
+        return catMatch && visMatch;
     });
 }
 },
             favItems() { 
-                return this.favs.map(f => {
-                    const product = this.products.find(p => p.id === f.id);
-                    if (product) {
-                    return { ...product, selS: f.size, aIdx: 0 };
-                    }
-                    return null;
-                }).filter(p => p !== null);
+                if (!this.favorites) return []; // Защита от ошибки 'map'
+                return this.products.filter(p => this.favorites.includes(p.id));
             },
             total() { return this.cart.reduce((s, i) => s + i.price, 0) },
             isValid() { return this.form.name.length > 2 && this.form.phone.length > 9 && this.address && this.cart.length > 0; }
