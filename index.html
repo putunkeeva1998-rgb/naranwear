@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -153,12 +154,26 @@
         <button class="close-modal" @click="burgerOpen = false">✕</button>
         <div class="brand-name" style="margin-bottom: 40px;">NARAN PREMIUM</div>
         <div style="display: flex; flex-direction: column; gap: 25px; font-weight: 700; text-transform: uppercase;">
-            <div @click="burgerOpen = false">О НАС</div>
-            <div @click="burgerOpen = false">ДОСТАВКА</div>
-            <div @click="burgerOpen = false">ВОЗВРАТ</div>
-            <div @click="openSupport" style="color: var(--gray);">ПОДДЕРЖКА</div>
+            <a href="#" class="menu-item" @click="tab = 'about'; menu = false; haptic()">О НАС</a>
+            <a href="#" class="menu-item" @click="tab = 'catalog'; menu = false; haptic()">ДОСТАВКА</a>
+            <a href="#" class="menu-item" @click="tab = 'profile'; menu = false; haptic()">ВОЗВРАТ</a>
         </div>
     </div>
+
+    <main style="padding-bottom: 100px;">
+    
+        <div v-if="tab === 'about'" style="padding: 40px 20px; animation: fadeIn 0.4s ease;">
+            <button @click="tab = 'catalog'; haptic()" style="background:none; border:none; font-weight:800; font-size:11px; letter-spacing:2px; margin-bottom:30px;">← НАЗАД К ПОКУПКАМ</button>
+            <h2 style="font-weight: 800; letter-spacing: 4px; font-size: 20px; margin-bottom: 25px;">O NARAN</h2>
+            <div style="line-height: 1.8; font-size: 14px; letter-spacing: 0.5px; color: #333;">
+                <p style="margin-bottom: 20px;">NARAN — это не просто магазин, это премиальная эстетика, воплощенная в каждой детали. Мы фокусируемся на минимализме, качественных материалах и идеальной посадке.</p>
+                <p style="margin-bottom: 20px;">Мы верим, что одежда — это отражение внутреннего состояния. Наш бренд создан для тех, кто выбирает комфорт, не жертвуя стилем.</p>
+                <div style="padding: 20px; background: #000; color: #fff; margin: 30px 0; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">
+                    Бесплатная доставка при заказе от 15 000 ₽. Скидка 10% на первый заказ.
+                </div>
+                <p>По вопросам сотрудничества: <b>@opttania</b></p>
+            </div>
+        </div>
 
     <main class="container">
         
@@ -609,11 +624,17 @@ Vue.createApp({
                 });
 
                 // Авто-позиция
-                tg.getLocation((data) => {
-                    if (data && data.latitude) {
-                        this.map.setCenter([data.longitude, data.latitude]);
-                    }
-                });
+                // Правильный вызов в Telegram WebApp
+tg.requestLocation((data) => {
+    if (data.location) {
+        const lat = data.location.latitude;
+        const lon = data.location.longitude;
+        // Дальше ваш код инициализации карты с этими координатами
+        this.map.setView([lat, lon], 14);
+    } else {
+        console.log("Пользователь отклонил запрос геопозиции");
+    }
+});
 
                 this.map.on('click', (e) => {
                     const [lng, lat] = e.lngLat;
