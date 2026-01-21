@@ -613,75 +613,80 @@ Vue.createApp({
         },
 
         initMap() {
-    try {
-        if (this.map) { this.map.destroy(); this.map = null; }
-        
-        this.map = new mapgl.Map('map', {
-            center: [37.6175, 55.7558],
-            zoom: 13,
-            key: 'cab82c94-e619-42eb-9814-3361712feaf0'
-        });
-
-        // Функция обработки координат (общая для всех)
-        const setPos = (lat, lon) => {
-            this.map.setCenter([lon, lat]);
-            this.map.setZoom(15);
-            this.getAddress(lat, lon);
-        };
-
-        // 1. Проверяем, запущены ли мы ВНУТРИ Telegram
-        // Проверка tg.initData позволяет понять, есть ли окружение ТГ
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== "") {
             try {
-                window.Telegram.WebApp.requestLocation((data) => {
-                    if (data && data.location) {
-                        setPos(data.location.latitude, data.location.longitude);
-                    }
+                if (this.map) { this.map.destroy(); this.map = null; }
+                
+                // Используем ваш ключ напрямую
+                const myKey = 'cab82c94-e619-42eb-9814-3361712feaf0';
+                
+                this.map = new mapgl.Map('map', {
+                    center: [37.6175, 55.7558],
+                    zoom: 13,
+                    key: myKey
                 });
-            } catch (e) {
-                console.warn("Telegram location failed, falling back to browser");
-            }
-        } else {
-            // 2. Если мы просто в браузере (как у вас сейчас на скриншоте)
-            // Используем стандартный навигатор браузера
-            navigator.geolocation.getCurrentPosition(
-                (p) => setPos(p.coords.latitude, p.coords.longitude),
-                (err) => console.log("Геопозиция недоступна в браузере")
-            );
-        }
 
-        this.map.on('click', (e) => {
-            this.getAddress(e.lngLat[1], e.lngLat[0]);
-        });
-    } catch (e) { console.error("Map error", e); }
-},
+                const setPos = (lat, lon) => {
+                    this.map.setCenter([lon, lat]);
+                    this.map.setZoom(15);
+                    this.getAddress(lat, lon);
+                };
 
-getAddress(lat, lon) {
-    const url = `https://catalog.api.2gis.com/3.0/items/geocode?lat=${lat}&lon=${lon}&radius=50&key=cab82c94-e619-42eb-9814-3361712feaf0`;
-
-    fetch(url)
-        .then(r => r.json())
-        .then(res => {
-            if (res.result?.items?.length) {
-                const addrName = res.result.items[0].address_name || res.result.items[0].name;
-                
-                // Чтобы адрес ТОЧНО вышел на экран, пишем в orderForm
-                const prefix = this.orderForm.delivery ? this.orderForm.delivery + ': ' : '';
-                this.orderForm.address = prefix + addrName;
-                
-                // Также обновляем простую переменную, если она используется
-                this.address = this.orderForm.address;
-                
-                // Принудительно обновляем Vue, если адрес не "прокидывается"
-                if (this.$forceUpdate) this.$forceUpdate();
-                
-                localStorage.setItem('naran_last_addr', this.orderForm.address);
-                if (window.Telegram?.WebApp?.HapticFeedback) {
-                    window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                // Проверка: если мы в Telegram и метод поддерживается
+                if (window.Telegram?.WebApp?.requestLocation) {
+                    try {
+                        window.Telegram.WebApp.requestLocation((data) => {
+                            if (data && data.location) {
+                                setPos(data.location.latitude, data.location.longitude);
+                            }
+                        });
+                    } catch (e) {
+                        // Если ТГ выдал ошибку, используем браузер
+                        navigator.geolocation.getCurrentPosition(p => setPos(p.coords.latitude, p.coords.longitude));
+                    }
+                } else {
+                    // Обычный браузер
+                    navigator.geolocation.getCurrentPosition(
+                        (p) => setPos(p.coords.latitude, p.coords.longitude),
+                        (err) => console.log("Геопозиция недоступна")
+                    );
                 }
-            }
-        });
-},
+
+                this.map.on('click', (e) => {
+                    this.getAddress(e.lngLat[1], e.lngLat[0]);
+                });
+            } catch (e) { console.error("Map error", e); }
+        },
+
+        getAddress(lat, lon) {
+            const myKey = 'cab82c94-e619-42eb-9814-3361712feaf0';
+            const url = `https://catalog.api.2gis.com/3.0/items/geocode?lat=${lat}&lon=${lon}&radius=50&key=${myKey}`;
+
+            fetch(url)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.result?.items?.length) {
+                        const addrName = res.result.items[0].address_name || res.result.items[0].name;
+                        
+                        // ПРАВИЛЬНАЯ ЗАПИСЬ:
+                        // В вашем коде используется 'deliv' и 'address' отдельно
+                        const prefix = this.deliv ? this.deliv + ': ' : '';
+                        this.address = prefix + addrName;
+                        
+                        // Для надежности записываем в объект формы, если он будет расширен
+                        if (this.form) this.form.address = this.address;
+
+                        // Принудительно говорим Vue обновить экран
+                        this.$forceUpdate();
+                        
+                        localStorage.setItem('naran_last_addr', this.address);
+                        
+                        if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                        }
+                    }
+                })
+                .catch(err => console.error("Ошибка геокода:", err));
+        },
 
         openSupport() { window.open('https://t.me/opttania', '_blank'); },
 
@@ -852,7 +857,7 @@ getAddress(lat, lon) {
         }, 100);
 
         // Восстановление адреса
-        this.address = localStorage.getItem('naran_last_addr') || '';
+        address = localStorage.getItem('naran_last_addr') || '';
     }
 }).mount('#app');
 </script>
