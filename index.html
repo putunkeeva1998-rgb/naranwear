@@ -194,13 +194,13 @@
             </div>
             <div class="products-grid">
                 <div v-for="p in filteredProducts" :key="p.id" class="card" style="position: relative;">
-                <button v-if="activeTab === 'admin'" 
-        @click.stop="toggleHideProduct(p)" 
+                <button v-if="isAdmin"
+        @click.stop="toggleHide(p)" 
         style="position: absolute; top: 10px; left: 10px; z-index: 9999; background: #ff4444; border: 2px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; padding: 0;">
     <span style="font-size: 22px;">{{ p.hidden ? '👁️‍🗨️' : '👁️' }}</span>
 </button>
     
-    <div v-if="p.hidden && activeTab === 'admin'" 
+    <div v-if="p.hidden && isAdmin"
          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; border-radius: 24px;">
          <span style="color: rgb(231, 76, 76); font-weight: 800; font-size: 12px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px;">СКРЫТО</span>
     </div>
@@ -386,7 +386,7 @@
             <div style="font-size: 24px; color: var(--accent); font-weight: 800; margin: 10px 0;">{{selP.price}} ₽</div>
             <p style="font-size: 13px; color: #666; line-height: 1.6;">{{selP.desc}}</p>
             <div class="size-btns" style="margin: 25px 0;">
-                <button v-for="s in selP.sizes" @click="selp.selectedSize = s; vibrate()" :class="['s-btn', selp.selectedSize === s ? 'active' : '']" style="padding: 15px;">{{s}}</button>
+                <button v-for="s in selP.sizes" @click="selP.selectedSize = s; vibrate()" :class="['s-btn', selP.selectedSize === s ? 'active' : '']" style="padding: 15px;">{{s}}</button>
             </div>
             <button class="order-btn" @click="addToCart(selP)">В корзину</button>
         </div>
@@ -755,7 +755,7 @@ locateMe() {
                 this.vibrate();
                 if (this.form.phone) {
                     localStorage.setItem('naran_user_phone', this.form.phone);
-        }
+
                 const now = new Date();
                 const dateStr = now.getDate().toString().padStart(2, '0') + 
                                 (now.getMonth() + 1).toString().padStart(2, '0') + 
@@ -773,9 +773,9 @@ locateMe() {
                 tg.sendData(JSON.stringify(orderData));
                 localStorage.removeItem('mimi_cart');
                 this.cart = [];
-this.saveCart();
-setTimeout(() => { tg.close(); }, 150);
-            }
+                this.saveCart();
+                setTimeout(() => { tg.close(); }, 150);
+                }
         },
         
        mounted() {
