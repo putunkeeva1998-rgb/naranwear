@@ -616,45 +616,55 @@ Vue.createApp({
             try {
                 if (this.map) { this.map.destroy(); this.map = null; }
                 
-                // Используем ваш ключ напрямую
-                const myKey = 'cab82c94-e619-42eb-9814-3361712feaf0';
-                
                 this.map = new mapgl.Map('map', {
                     center: [37.6175, 55.7558],
                     zoom: 13,
-                    key: myKey
+                    key: this.key2gis
                 });
-
-                const setPos = (lat, lon) => {
-                    this.map.setCenter([lon, lat]);
-                    this.map.setZoom(15);
-                    this.getAddress(lat, lon);
-                };
-
-                // Проверка: если мы в Telegram и метод поддерживается
-                if (window.Telegram?.WebApp?.requestLocation) {
-                    try {
-                        window.Telegram.WebApp.requestLocation((data) => {
-                            if (data && data.location) {
-                                setPos(data.location.latitude, data.location.longitude);
-                            }
-                        });
-                    } catch (e) {
-                        // Если ТГ выдал ошибку, используем браузер
-                        navigator.geolocation.getCurrentPosition(p => setPos(p.coords.latitude, p.coords.longitude));
-                    }
-                } else {
-                    // Обычный браузер
-                    navigator.geolocation.getCurrentPosition(
-                        (p) => setPos(p.coords.latitude, p.coords.longitude),
-                        (err) => console.log("Геопозиция недоступна")
-                    );
-                }
 
                 this.map.on('click', (e) => {
                     this.getAddress(e.lngLat[1], e.lngLat[0]);
                 });
+
+                // ТРЮК ДЛЯ ТЕЛЕГРАМА: Сначала просим разрешение через SDK
+                tg.requestLocation((data) => {
+                    if (data && data.location) {
+                        // Если ТГ дал координаты — используем их
+                        const lat = data.location.latitude;
+                        const lon = data.location.longitude;
+                        this.map.setCenter([lon, lat]);
+                        this.map.setZoom(15);
+                        this.getAddress(lat, lon);
+                    } else {
+                        // Если ТГ не дал — пробуем обычный навигатор (запасной вариант)
+                        navigator.geolocation.getCurrentPosition(p => {
+                            this.map.setCenter([p.coords.longitude, p.coords.latitude]);
+                            this.getAddress(p.coords.latitude, p.coords.longitude);
+                        });
+                    }
+                });
             } catch (e) { console.error("Map error", e); }
+        },
+
+        getAddress(lat, lon) {
+            // УБРАЛИ &fields=... так как это главная причина ошибки в ТГ
+            const url = `https://catalog.api.2gis.com/3.0/items/geocode?lat=${lat}&lon=${lon}&radius=50&key=${this.key2gis}`;
+
+            fetch(url)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.result?.items?.length) {
+                        const obj = res.result.items[0];
+                        // Используем адрес точно так же, как в твоем первом (рабочем) коде
+                        this.address = obj.address_name || obj.full_name || obj.name || "Адрес не определен";
+                        
+                        localStorage.setItem('naran_last_addr', this.address);
+                        this.haptic(); // Вибрация
+                    }
+                })
+                .catch(err => {
+                    console.error("Geocode error", err);
+                });
         },
 
         getAddress(lat, lon) {
