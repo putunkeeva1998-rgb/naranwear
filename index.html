@@ -51,12 +51,17 @@
             padding: 5px 0; scrollbar-width: none; 
         }
         .cat-row::-webkit-scrollbar { display: none; }
-        .cat-tab { 
-            padding: 12px 20px; border: 1px solid #000; background: #fff; color: #000; 
-            font-size: 11px; font-weight: 700; white-space: nowrap; text-transform: uppercase; 
-            border-radius: 2px; transition: 0.2s;
-        }
-        .cat-tab.active { background: #000; color: #fff; }
+        .cat-tab {
+    cursor: pointer !important; /* Делает кнопку активной для клика */
+    transition: all 0.1s ease;
+    user-select: none;
+    touch-action: manipulation; /* Улучшает отклик на смартфонах */
+}
+
+.cat-tab:active {
+    transform: scale(0.95); /* Эффект проседания при нажатии */
+    opacity: 0.7;
+}
 
         /* Новые стили для карточек */
 .fav-overlay { 
@@ -910,8 +915,25 @@ async updateStatus(order, status) {
 },
 
         async updateStatus(order, status) {
+        try {
+            // 1. Обновление в Firebase
             await window.fb.updateDoc(window.fb.doc(window.db, "orders", order.id), { status });
-        },
+            
+            // 2. Отправка данных боту (чтобы бот увидел нажатие)
+            const data = {
+                action: 'status_update',
+                order_id: order.order_id,
+                status: status,
+                client_id: order.user.id
+            };
+            window.Telegram.WebApp.sendData(JSON.stringify(data));
+            
+            this.vib(); // Виброотклик
+            console.log("Статус обновлен:", status);
+        } catch (e) {
+            console.error("Ошибка клика:", e);
+        }
+    },
 
         printOrder(o) {
     const { jsPDF } = window.jspdf;
