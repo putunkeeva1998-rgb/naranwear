@@ -833,31 +833,61 @@ Vue.createApp({
         },
 
         async checkout() {
-    // ... ваш код формирования заказа ...
-    const orderId = Date.now().toString().slice(-6);
-    const msg = `👤 Клиент: ${this.form.name}\n📞 Тел: ${this.form.phone}\n📍 Адрес: ${this.address}\n💰 Итого: ${this.total} ₽`;
+    // 1. Валидация перед отправкой
+    if (this.cart.length === 0) return alert('Ваша корзина пуста');
+    if (!this.form.name) return alert('Введите имя');
+    if (!this.form.phone) return alert('Введите телефон');
 
-    const orderData = {
-        order_id: orderId,
-        customer_name: this.form.name,
-        customer_phone: this.form.phone,
-        order_total: this.total,
-        message: msg, // Отправляем готовый текст
-        cart: this.cart,
-        address: this.address,
-        delivery: this.delivery
-    };
+    this.loading = true; // Блокируем кнопку
 
-    // Сохраняем в Firebase
-    await window.fb.addDoc(window.fb.collection(window.db, "orders"), {
-        ...orderData,
-        user: this.user,
-        status: 'Новый',
-        createdAt: new Date()
-    });
+    try {
+        const orderId = Date.now().toString().slice(-6);
+        
+        // Собираем данные, ПРОВЕРЯЯ каждое поле на undefined
+        const name = this.form.name || 'Не указано';
+        const phone = this.form.phone || 'Не указано';
+        const address = this.address || 'Адрес не выбран';
+        const delivery = this.deliv || 'Не выбран'; // Убедитесь, что у вас deliv или delivery
+        const total = this.total || 0;
 
-    // Отправляем в Бот
-    tg.sendData(JSON.stringify(orderData));
+        const msg = `👤 Клиент: ${name}\n📞 Тел: ${phone}\n📍 Адрес: ${address}\n🚚 Доставка: ${delivery}\n💰 Итого: ${total} ₽`;
+
+        const orderData = {
+            order_id: orderId,
+            customer_name: name,
+            customer_phone: phone,
+            order_total: total,
+            message: msg,
+            items: JSON.parse(JSON.stringify(this.cart)), // Безопасное копирование корзины
+            address: address,
+            delivery: delivery
+        };
+
+        // 2. Сохраняем в Firebase (используем только проверенные данные)
+        await window.fb.addDoc(window.fb.collection(window.db, "orders"), {
+            ...orderData,
+            user: {
+                id: this.user.id || 0,
+                username: this.user.username || 'n/a'
+            },
+            status: 'Новый',
+            createdAt: new Date()
+        });
+
+        // 3. Отправляем в Telegram
+        tg.sendData(JSON.stringify(orderData));
+        
+        tg.showAlert(`Заказ №${orderId} успешно оформлен!`);
+        this.cart = [];
+        this.saveCart();
+        this.tab = 'profile';
+
+    } catch (e) {
+        console.error("Ошибка при оформлении:", e);
+        alert("Ошибка Firebase: " + e.message);
+    } finally {
+        this.loading = false;
+    }
 },
 
 // Метод для кнопок "В пути" и "Готов"
