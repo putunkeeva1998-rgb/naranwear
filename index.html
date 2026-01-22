@@ -142,19 +142,10 @@
         .field label { display: block; font-size: 10px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; }
         .input-admin { width: 100%; padding: 12px; border: 1px solid #ddd; font-family: inherit; font-size: 13px; border-radius: 2px; }
         
-        .order-card button {
-    cursor: pointer; /* Указатель при наведении */
-    transition: opacity 0.2s;
-    user-select: none;
-}
-
-.order-card button:active {
-    transform: scale(0.96); /* Эффект нажатия */
-    opacity: 0.7;
-}
-
-.status-ready { background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }
-.status-process { background: #fff3e0; color: #ef6c00; border: 1px solid #ef6c00; }
+        .order-card { background: #fff; border: 1px solid #eee; padding: 15px; margin-bottom: 10px; }
+        .status-badge { display: inline-block; padding: 4px 8px; font-size: 9px; font-weight: 800; text-transform: uppercase; margin-top: 5px; }
+        .status-ready { background: #e8f5e9; color: #2e7d32; }
+        .status-process { background: #fff3e0; color: #ef6c00; }
 
         [v-cloak] { display: none; }
     </style>
@@ -436,9 +427,9 @@
                 <div style="font-size:11px;"><b>ЗАКАЗ:</b> {{o.order_id}} | <b>КЛИЕНТ:</b> {{o.user.name}}</div>
                 <div style="font-size:10px; margin: 5px 0;">{{o.items.map(i => i.title).join(', ')}}</div>
                 <div style="display:flex; gap:5px; margin-top:10px;">
-                    <button class="cat-tab" @click="updateStatus(o, 'В пути')" style="padding: 5px;">В ПУТИ</button>
-                    <button class="cat-tab" @click="updateStatus(o, 'Готов')" style="padding: 5px;">ГОТОВ</button>
-                    <button class="cat-tab" @click="printOrder(o)" style="padding: 5px;">🖨️ ЧЕК</button>
+                    <button class="cat-tab" @click="updateStatus(o, 'В пути')" style="padding: 5px; flex: 1;">В ПУТИ</button>
+                    <button class="cat-tab" @click="updateStatus(o, 'Готов')" style="padding: 5px; flex: 1;">ГОТОВ</button>
+                    <button class="cat-tab" @click="printOrder(o)" style="padding: 5px; flex: 1; border: 1px solid #000;">ЧЕК</button>
                 </div>
             </div>
 
@@ -738,21 +729,32 @@ Vue.createApp({
         },
 
         getAddress(lat, lon) {
-    const currentKey = 'cab82c94-e619-42eb-9814-3361712feaf0';
-    const url = `https://catalog.api.2gis.com/3.0/items/geocode?lat=${lat}&lon=${lon}&radius=50&key=${currentKey}`;
+            const currentKey = 'cab82c94-e619-42eb-9814-3361712feaf0';
+            const url = `https://catalog.api.2gis.com/3.0/items/geocode?lat=${lat}&lon=${lon}&radius=50&key=${currentKey}`;
 
-    fetch(url)
-        .then(r => r.json())
-        .then(res => {
-            if (res.result?.items?.length) {
-                const addrName = res.result.items[0].address_name || res.result.items[0].name;
-                // Сохраняем и тип доставки, и сам адрес
-                this.address = `${this.deliv}: ${addrName}`; 
-                this.vib();
-            }
-        })
-        .catch(err => console.error("2GIS error", err));
-},
+            fetch(url)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.result?.items?.length) {
+                        const addrName = res.result.items[0].address_name || res.result.items[0].name;
+                        
+                        // В вашем файле адрес должен попасть в ТРИ места, чтобы заработать:
+                        const fullAddr = (this.deliv ? this.deliv + ': ' : '') + addrName;
+                        
+                        this.address = fullAddr; // 1. Для текста под картой 📍
+                        if (this.form) this.form.address = fullAddr; // 2. Для данных заказа
+                        localStorage.setItem('naran_last_addr', fullAddr); // 3. В память
+                        
+                        // Важно для Vue: принудительно обновить экран
+                        this.$forceUpdate();
+                        
+                        if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                        }
+                    }
+                })
+                .catch(err => console.error("2GIS error", err));
+        },
 
         openSupport() { window.open('https://t.me/opttania', '_blank'); },
 
@@ -831,133 +833,83 @@ Vue.createApp({
         },
 
         async checkout() {
-    // 1. Предварительная проверка корзины
-    if (!this.cart || this.cart.length === 0) {
-        return alert('Ваша корзина пуста');
-    }
-
-    // 2. Сбор данных с приоритетом (сначала из Vue, если пусто — из полей ввода напрямую)
-    const nameValue = this.form.name?.trim() || document.querySelector('input[placeholder="ИМЯ"]')?.value?.trim();
-    const phoneValue = this.form.phone?.trim() || document.querySelector('input[type="tel"]')?.value?.trim();
-    const deliveryValue = this.deliv;
-    const addressValue = this.address;
-
-    // 3. Валидация собранных данных
-    if (!nameValue) return alert('Введите ваше имя');
-    if (!phoneValue || phoneValue.length < 10) return alert('Введите корректный номер телефона');
-    if (!deliveryValue) return alert('Выберите способ доставки');
-    if (!addressValue) return alert('Пожалуйста, выберите адрес на карте');
-
-    this.loading = true;
-
-    // 4. Генерация ID и расчет суммы вручную (для надежности)
-    const date = new Date();
-    const orderId = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getFullYear()).slice(-2)}-${Math.floor(10000 + Math.random() * 90000)}`;
-    
-    const calculatedTotal = this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const itemsList = this.cart.map(i => `• ${i.title} (${i.selSize}) x${i.qty} — ${i.price * i.qty} ₽`).join('\n');
-
-    // 5. Формирование итогового сообщения (используем только проверенные константы!)
-    const msg = `📦 НОВЫЙ ЗАКАЗ #${orderId}\n` +
-                `⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n` +
-                `👤 Клиент: ${nameValue}\n` +
-                `📞 Телефон: ${phoneValue}\n` +
-                `🚚 Доставка: ${deliveryValue}\n` +
-                `📍 Адрес: ${addressValue}\n\n` +
-                `🛍 СОСТАВ ЗАКАЗА:\n${itemsList}\n\n` +
-                `💰 ИТОГО К ОПЛАТЕ: ${calculatedTotal} ₽`;
+    // ... ваш код формирования заказа ...
+    const orderId = Date.now().toString().slice(-6);
+    const msg = `👤 Клиент: ${this.form.name}\n📞 Тел: ${this.form.phone}\n📍 Адрес: ${this.address}\n💰 Итого: ${this.total} ₽`;
 
     const orderData = {
         order_id: orderId,
-        user: { 
-            id: this.user.id,
-            name: nameValue,
-            phone: phoneValue,
-            username: this.user.username || 'n/a'
-        },
-        items: JSON.parse(JSON.stringify(this.cart)), // Глубокое копирование
-        total: calculatedTotal,
-        address: addressValue,
-        delivery: deliveryValue,
-        status: 'В обработке',
-        createdAt: Date.now(),
-        date: date.toLocaleString()
+        customer_name: this.form.name,
+        customer_phone: this.form.phone,
+        order_total: this.total,
+        message: msg, // Отправляем готовый текст
+        cart: this.cart,
+        address: this.address,
+        delivery: this.delivery
     };
 
-    try {
-        // Сохранение в Firebase
-        await window.fb.addDoc(window.fb.collection(window.db, "orders"), orderData);
-        
-        // Отправка в Telegram
-        if (window.Telegram?.WebApp) {
-            window.Telegram.WebApp.sendData(JSON.stringify({ 
-                message: msg, 
-                type: 'order',
-                order_id: orderId,
-                customer_phone: phoneValue
-            }));
-        }
+    // Сохраняем в Firebase
+    await window.fb.addDoc(window.fb.collection(window.db, "orders"), {
+        ...orderData,
+        user: this.user,
+        status: 'Новый',
+        createdAt: new Date()
+    });
 
-        // Очистка
-        localStorage.setItem('naran_phone', phoneValue);
-        this.cart = [];
-        this.saveCart();
+    // Отправляем в Бот
+    tg.sendData(JSON.stringify(orderData));
+},
+
+// Метод для кнопок "В пути" и "Готов"
+async updateStatus(order, status) {
+    try {
+        await window.fb.updateDoc(window.fb.doc(window.db, "orders", order.id), { status });
         
-        tg.showAlert(`Заказ №${orderId} успешно оформлен!`);
-        this.tab = 'profile';
+        // Уведомляем бота, чтобы тот написал клиенту
+        tg.sendData(JSON.stringify({
+            action: 'status_update',
+            order_id: order.order_id,
+            status: status,
+            client_id: order.user.id
+        }));
         
-    } catch (e) { 
-        console.error("Checkout Error:", e);
-        alert('Ошибка при оформлении: ' + e.message); 
-    } finally {
-        this.loading = false;
+        this.vib(); 
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
     }
 },
+
+        async updateStatus(order, status) {
+            await window.fb.updateDoc(window.fb.doc(window.db, "orders", order.id), { status });
+        },
 
         printOrder(o) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-
-    // Заголовок чека
-    doc.setFontSize(18);
-    doc.text("NARAN PREMIUM - TOVARNIY CHEK", 10, 15); 
+    
+    // Используем транслит или латиницу, так как стандартный jsPDF не знает кириллицу
+    doc.setFontSize(16);
+    doc.text("MIMI 4 MINI - CHECK", 105, 15, { align: 'center' });
+    
     doc.setFontSize(10);
-    doc.text(`Nomer zakaza: ${o.order_id}`, 10, 25);
-    doc.text(`Data: ${o.date}`, 10, 30);
+    doc.text(`Order ID: ${o.order_id}`, 20, 30);
+    doc.text(`Customer: ${o.customer_name || o.user.name}`, 20, 37);
+    doc.text(`Phone: ${o.customer_phone || o.user.phone}`, 20, 44);
+    doc.text(`Address: ${o.address}`, 20, 51);
     
-    doc.line(10, 35, 200, 35); // Разделительная линия
-
-    // Данные клиента
-    doc.text(`Klient: ${o.user.name}`, 10, 45);
-    doc.text(`Telefon: ${o.user.phone}`, 10, 50);
-    doc.text(`Dostavka: ${o.delivery}`, 10, 55);
-    doc.text(`Adres: ${o.address}`, 10, 60);
-
-    doc.line(10, 65, 200, 65);
-
-    // Список товаров
-    let y = 75;
-    doc.text("TOVARY:", 10, 70);
+    doc.line(20, 55, 190, 55);
     
-    o.items.forEach((item, index) => {
-        const itemInfo = `${index + 1}. ${item.title} | Razmer: ${item.selSize} | Kol-vo: ${item.qty}`;
-        const priceInfo = `${item.price * item.qty} RUB`;
-        
-        doc.text(itemInfo, 10, y);
-        doc.text(priceInfo, 170, y);
+    let y = 65;
+    o.cart.forEach((item, i) => {
+        doc.text(`${i+1}. ${item.name} (${item.size})`, 25, y);
+        doc.text(`${item.price} RUB`, 160, y);
         y += 10;
-        
-        if (y > 280) { // Переход на новую страницу
-            doc.addPage();
-            y = 20;
-        }
     });
-
-    doc.line(10, y, 200, y);
-    doc.setFontSize(14);
-    doc.text(`ITOGO: ${o.total} RUB`, 10, y + 10); // Итоговая сумма
-
-    doc.save(`Order_${o.order_id}.pdf`);
+    
+    doc.line(20, y, 190, y);
+    doc.text(`TOTAL: ${o.order_total || o.total} RUB`, 20, y + 10);
+    
+    doc.save(`order_${o.order_id}.pdf`);
 }
     },
     mounted() {
