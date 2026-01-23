@@ -915,53 +915,52 @@ async updateStatus(order, status) {
 },
 
         async updateStatus(order, status) {
-        try {
-            // 1. Обновление в Firebase
-            await window.fb.updateDoc(window.fb.doc(window.db, "orders", order.id), { status });
-            
-            // 2. Отправка данных боту (чтобы бот увидел нажатие)
-            const data = {
-                action: 'status_update',
-                order_id: order.order_id,
-                status: status,
-                client_id: order.user.id
-            };
-            window.Telegram.WebApp.sendData(JSON.stringify(data));
-            
-            this.vib(); // Виброотклик
-            console.log("Статус обновлен:", status);
-        } catch (e) {
-            console.error("Ошибка клика:", e);
-        }
-    },
+    try {
+        // 1. Обновляем статус в базе Firebase
+        await window.fb.updateDoc(window.fb.doc(window.db, "orders", order.id), { status });
+        
+        // 2. Отправляем сигнал боту, чтобы он написал клиенту (client_id берем из заказа)
+        const updateInfo = {
+            action: 'status_update',
+            order_id: order.order_id,
+            status: status,
+            client_id: order.user.id
+        };
+        tg.sendData(JSON.stringify(updateInfo));
+        
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch (e) {
+        alert('Ошибка обновления: ' + e.message);
+    }
+},
 
         printOrder(o) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // Используем транслит или латиницу, так как стандартный jsPDF не знает кириллицу
+    // Заголовок (используем латиницу для надежности шрифтов)
     doc.setFontSize(16);
-    doc.text("MIMI 4 MINI - CHECK", 105, 15, { align: 'center' });
+    doc.text("NARAN PREMIUM - CHECK", 105, 15, { align: 'center' });
     
     doc.setFontSize(10);
-    doc.text(`Order ID: ${o.order_id}`, 20, 30);
-    doc.text(`Customer: ${o.customer_name || o.user.name}`, 20, 37);
-    doc.text(`Phone: ${o.customer_phone || o.user.phone}`, 20, 44);
+    doc.text(`ID: #${o.order_id}`, 20, 30);
+    doc.text(`Name: ${o.customer_name}`, 20, 37);
+    doc.text(`Phone: ${o.customer_phone}`, 20, 44);
     doc.text(`Address: ${o.address}`, 20, 51);
     
     doc.line(20, 55, 190, 55);
     
     let y = 65;
-    o.cart.forEach((item, i) => {
-        doc.text(`${i+1}. ${item.name} (${item.size})`, 25, y);
+    o.items.forEach((item, i) => {
+        doc.text(`${i+1}. ${item.title} (${item.selSize || '-'})`, 25, y);
         doc.text(`${item.price} RUB`, 160, y);
         y += 10;
     });
     
     doc.line(20, y, 190, y);
-    doc.text(`TOTAL: ${o.order_total || o.total} RUB`, 20, y + 10);
+    doc.text(`TOTAL: ${o.order_total} RUB`, 20, y + 10);
     
-    doc.save(`order_${o.order_id}.pdf`);
+    doc.save(`check_${o.order_id}.pdf`);
 }
     },
     mounted() {
