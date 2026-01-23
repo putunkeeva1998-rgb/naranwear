@@ -1101,72 +1101,106 @@ async updateStatus(order, status) {
 },
 
        printOrder(o) {
-    try {
-        // Проверяем наличие товаров, чтобы map не выдал ошибку
-        const itemsList = (o.items && Array.isArray(o.items)) 
-            ? o.items.map(i => `▫️ ${i.title} (${i.selSize || '-'}): ${i.price}р`).join('\n') 
-            : 'Товары не найдены';
+    // Создаем содержимое чека
+    const printWindow = window.open('', '_blank');
+    const date = o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString('ru-RU') : new Date().toLocaleString('ru-RU');
+    
+    const html = `
+    <html>
+    <head>
+        <title>Чек по заказу #${o.order_id}</title>
+        <style>
+            body { font-family: 'Arial', sans-serif; padding: 20px; color: #333; }
+            .ticket { width: 100%; max-width: 800px; margin: 0 auto; border: 1px solid #eee; padding: 20px; }
+            h1 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .info { margin-bottom: 20px; display: flex; justify-content: space-between; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #f9f9f9; }
+            .total { text-align: right; font-size: 20px; font-weight: bold; margin-top: 20px; }
+            .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #888; }
+            @media print {
+                .no-print { display: none; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+            <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer;">Напечатать или Сохранить в PDF</button>
+        </div>
+        <div class="ticket">
+            <h1>ТОВАРНЫЙ ЧЕК №${o.order_id}</h1>
+            <div class="info">
+                <div>
+                    <p><strong>Покупатель:</strong> ${o.customer_name || 'Не указано'}</p>
+                    <p><strong>Телефон:</strong> ${o.customer_phone || 'Не указано'}</p>
+                    <p><strong>Дата:</strong> ${date}</p>
+                </div>
+                <div style="text-align: right;">
+                    <p><strong>Доставка:</strong> ${o.delivery || 'Не указана'}</p>
+                    <p><strong>Адрес:</strong> ${o.address || 'Не указан'}</p>
+                </div>
+            </div>
 
-        const checkText = `
-🧾 ЗАКАЗ №${o.order_id}
-━━━━━━━━━━━━━━━━━━━━
-👤 Клиент: ${o.customer_name || 'Не указан'}
-📞 Тел: ${o.customer_phone || 'Не указан'}
-🚚 Доставка: ${o.delivery || 'Не указано'}
-📍 Адрес: ${o.address || 'Не указан'}
-━━━━━━━━━━━━━━━━━━━━
-📦 СОСТАВ:
-${itemsList}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Наименование товара</th>
+                        <th>Детали</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Состав заказа</td>
+                        <td style="white-space: pre-wrap;">${o.items_text || 'Информации о товарах нет'}</td>
+                    </tr>
+                </tbody>
+            </table>
 
-💰 ИТОГО: ${o.order_total || 0} руб.
-━━━━━━━━━━━━━━━━━━━━
-📅 Дата: ${o.createdAt ? new Date(o.createdAt).toLocaleString() : 'Не указана'}
-        `;
-        
-        // Показываем в Telegram
-        tg.showAlert(checkText);
+            <div class="total">ИТОГО К ОПЛАТЕ: ${o.order_total} ₽</div>
+            
+            <div class="footer">
+                <p>Спасибо за покупку в NARAN PREMIUM!</p>
+            </div>
+        </div>
+        <script>
+            // Автоматически открываем диалог печати
+            window.onload = function() { window.print(); }
+        </script>
+    </body>
+    </html>`;
 
-        // Добавим вибрацию, чтобы чувствовать нажатие
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-    } catch (e) {
-        console.error("Ошибка в ЧЕКЕ:", e);
-        tg.showAlert("Ошибка при формировании чека: " + e.message);
-    }
+    printWindow.document.write(html);
+    printWindow.document.close();
 },
 updateChart() {
-    // 1. Ищем холст. Если его нет (например, админ еще не авторизован), выходим без ошибки
     const ctx = document.getElementById('salesChart');
     if (!ctx) return;
 
-    // 2. Уничтожаем старый график, если он уже существует, чтобы избежать наложений
-    if (this.salesChart) {
-        this.salesChart.destroy();
-    }
-
+    // Генерируем даты последних 7 дней
     const labels = [];
     const counts = [];
     const now = new Date();
 
-    // 3. Собираем данные за последние 7 дней
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(now.getDate() - i);
         labels.push(d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }));
         
+        // Считаем заказы за этот день
         const dayStart = new Date(d.setHours(0,0,0,0)).getTime();
         const dayEnd = new Date(d.setHours(23,59,59,999)).getTime();
         
-        // Фильтруем заказы по времени создания
-        const dayOrders = (this.allOrders || []).filter(o => {
+        const dayOrders = this.allOrders.filter(o => {
             const t = o.createdAt?.seconds ? o.createdAt.seconds * 1000 : 0;
             return t >= dayStart && t <= dayEnd;
         });
         counts.push(dayOrders.length);
     }
 
-    // 4. Создаем новый график и сохраняем его в this.salesChart
-    this.salesChart = new Chart(ctx, {
+    if (this.chart) this.chart.destroy();
+
+    this.chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
@@ -1176,7 +1210,7 @@ updateChart() {
                 borderColor: '#000',
                 backgroundColor: 'rgba(0,0,0,0.05)',
                 borderWidth: 3,
-                tension: 0.4,
+                tension: 0.4, // Делает линию плавной (премиально)
                 fill: true,
                 pointRadius: 4,
                 pointBackgroundColor: '#000'
@@ -1184,7 +1218,6 @@ updateChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
                 y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } },
