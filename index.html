@@ -431,8 +431,22 @@
                 <div style="font-size:11px;"><b>ЗАКАЗ:</b> {{o.order_id}} | <b>КЛИЕНТ:</b> {{o.user.name}}</div>
                 <div style="font-size:10px; margin: 5px 0;">{{o.items.map(i => i.title).join(', ')}}</div>
                 <div style="display:flex; gap:5px; margin-top:10px;">
-                    <button class="cat-tab" @click="updateStatus(o, 'В пути')" style="padding: 5px; flex: 1;">В ПУТИ</button>
-                    <button class="cat-tab" @click="updateStatus(o, 'Готов')" style="padding: 5px; flex: 1;">ГОТОВ</button>
+                    <button class="cat-tab" 
+                      @click="updateStatus(o, 'В пути')" 
+                      :disabled="o.isUpdating"
+                      style="padding: 5px; flex: 1; min-height: 32px;">
+                      <span v-if="o.isUpdating && o.lastClickedStatus === 'В пути' && !o.statusUpdated">⏳...</span>
+                      <span v-else-if="o.statusUpdated && o.lastClickedStatus === 'В пути'">✅ УВЕДОМЛЕН</span>
+                     <span v-else>В ПУТИ</span>
+                    </button>
+                    <button class="cat-tab" 
+                       @click="updateStatus(o, 'Готов')" 
+                       :disabled="o.isUpdating"
+                       style="padding: 5px; flex: 1; min-height: 32px;">
+                       <span v-if="o.isUpdating && o.lastClickedStatus === 'Готов' && !o.statusUpdated">⏳...</span>
+                       <span v-else-if="o.statusUpdated && o.lastClickedStatus === 'Готов'">✅ ГОТОВО</span>
+                       <span v-else>ГОТОВ</span>
+                      </button>
                     <button class="cat-tab" @click="printOrder(o)" style="padding: 5px; flex: 1; border: 1px solid #000;">ЧЕК</button>
                 </div>
             </div>
@@ -900,40 +914,33 @@ Vue.createApp({
 
 // Метод для кнопок "В пути" и "Готов"
 async updateStatus(order, status) {
-    try {
-        await window.fb.updateDoc(window.fb.doc(window.db, "orders", order.id), { status });
-        
-        // Уведомляем бота, чтобы тот написал клиенту
-        tg.sendData(JSON.stringify({
-            action: 'status_update',
-            order_id: order.order_id,
-            status: status,
-            client_id: order.user.id
-        }));
-        
-        this.vib(); 
-    } catch (e) {
-        alert('Ошибка: ' + e.message);
-    }
-},
+    // 1. Включаем индикатор загрузки для этой кнопки
+    order.isUpdating = true;
+    order.lastClickedStatus = status; // Запоминаем, какая кнопка нажата
 
-        async updateStatus(order, status) {
     try {
-        // 1. Обновляем статус в базе Firebase
+        // 2. Обновляем статус в Firebase
+        // Твой бот сам увидит это изменение и отправит сообщение клиенту
         await window.fb.updateDoc(window.fb.doc(window.db, "orders", order.id), { status });
         
-        // 2. Отправляем сигнал боту, чтобы он написал клиенту (client_id берем из заказа)
-        const updateInfo = {
-            action: 'status_update',
-            order_id: order.order_id,
-            status: status,
-            client_id: order.user.id
-        };
-        tg.sendData(JSON.stringify(updateInfo));
-        
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        // 3. Вибрация для подтверждения
+        if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+
+        // 4. Показываем статус "Уведомлен" (галочку)
+        order.statusUpdated = true;
+
+        // 5. Через 3 секунды возвращаем кнопку в обычное состояние
+        setTimeout(() => {
+            order.statusUpdated = false;
+            order.isUpdating = false;
+        }, 3000);
+
     } catch (e) {
-        alert('Ошибка обновления: ' + e.message);
+        console.error('Ошибка обновления:', e);
+        alert('Ошибка: ' + e.message);
+        order.isUpdating = false;
     }
 },
 
