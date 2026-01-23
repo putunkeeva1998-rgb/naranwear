@@ -937,34 +937,22 @@ async updateStatus(order, status) {
     }
 },
 
-        printOrder(o) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Настройка шрифта и стиля
-    doc.setFontSize(18);
-    doc.text(`CHEQUE: ${o.order_id}`, 20, 20); // Заголовок
+       printOrder(o) {
+    const checkText = `
+        ЧЕК ЗАКАЗА №${o.order_id}
+        --------------------------
+        Клиент: ${o.customer_name || 'Не указан'}
+        Телефон: ${o.customer_phone || 'Не указан'}
+        Адрес: ${o.address || 'Самовывоз'}
+        --------------------------
+        Товары:
+        ${o.items.map(i => `- ${i.title} (${i.selSize}): ${i.price}р`).join('\n')}
+        --------------------------
+        ИТОГО: ${o.order_total} руб.
+    `;
     
-    doc.setFontSize(12);
-    doc.text(`Client: ${o.user?.name || 'Customer'}`, 20, 35);
-    doc.text(`Phone: ${o.user?.phone || 'n/a'}`, 20, 42);
-    doc.text(`Address: ${o.address || 'Self-pickup'}`, 20, 49);
-    
-    doc.text('------------------------------------------', 20, 56);
-    
-    // Вывод товаров
-    let y = 65;
-    o.items.forEach((item, index) => {
-        doc.text(`${index + 1}. ${item.title} - ${item.price} RUB`, 20, y);
-        y += 7;
-    });
-    
-    doc.text('------------------------------------------', 20, y + 5);
-    doc.setFontSize(14);
-    doc.text(`TOTAL: ${o.order_total} RUB`, 20, y + 15);
-
-    // Сохранение файла
-    doc.save(`Order_${o.order_id}.pdf`);
+    // Показывает чек в красивом системном окне Telegram
+    tg.showAlert(checkText); 
 }
     },
     mounted() {
