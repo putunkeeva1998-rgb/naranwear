@@ -743,18 +743,24 @@ Vue.createApp({
             if (!this.products) return [];
             return this.products.filter(p => this.favorites.includes(p.id));
         },
-        cartCount() {
-            return this.cart.reduce((sum, item) => sum + item.qty, 0);
-        },
+        
+        // 1. Считает сумму ТОВАРОВ В КОРЗИНЕ (для кнопки оформления)
         total() {
-            return this.allOrders
-        .filter(o => o.status !== 'Отменен')
-        .reduce((sum, o) => sum + (Number(o.order_total) || 0), 0);
+            return this.cart.reduce((sum, item) => {
+                return sum + (Number(item.price) * Number(item.qty));
+            }, 0);
         },
+
+        // 2. Считает количество ШТУК в корзине (для красного кружка на иконке)
+        cartCount() {
+            return this.cart.reduce((sum, item) => sum + Number(item.qty), 0);
+        },
+
+        // 3. Считает ВЫРУЧКУ всех заказов (только для админ-панели)
         revenue() {
-            return this.allOrders.reduce((sum, order) => {
-                return sum + (Number(order.order_total) || 0);
-                }, 0);
+            return this.allOrders
+                .filter(o => o.status !== 'Отменен')
+                .reduce((sum, order) => sum + (Number(order.order_total) || 0), 0);
         },
     },
     methods: {
@@ -797,18 +803,21 @@ Vue.createApp({
         },
 
         addToCart(p) {
-            this.vib();
-            const cartId = p.id + p.selSize + p.selColor;
-            const exist = this.cart.find(i => i.cartId === cartId);
-            if (exist) {
-                exist.qty++;
-            } else {
-                this.cart.push({ ...p, cartId, qty: 1 });
-            }
-            this.saveCart();
-            this.selP = null;
-            tg.HapticFeedback.notificationOccurred('success');
-        },
+    this.vib();
+    const cartId = p.id + p.selSize + p.selColor;
+    const exist = this.cart.find(i => i.cartId === cartId);
+    
+    if (exist) {
+        exist.qty++;
+    } else {
+        // Добавляем Number(p.price), чтобы цена всегда была числом
+        this.cart.push({ ...p, cartId, qty: 1, price: Number(p.price) });
+    }
+    
+    this.saveCart();
+    this.selP = null;
+    tg.HapticFeedback.notificationOccurred('success');
+},
 
         quickAddToCart(p) {
     this.vib();
