@@ -465,19 +465,29 @@
              </div>
 
              <div v-if="showProductList" style="padding: 5px; max-height: 400px; overflow-y: auto; background: #fff;">
+
+
+
                 <div v-for="p in products" :key="p.id" 
-                   style="display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #f2f2f7;">
-                  <img :src="p.images ? p.images[0] : ''" style="width: 40px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;">
-                  <div style="flex: 1; min-width: 0;">
-                       <div style="font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.title }}</div>
-                       <div style="font-size: 11px; color: #8e8e93;">{{ p.price }} ₽</div>
-                      </div>
-                      <div style="display: flex; gap: 12px;">
-                        <button @click="editProduct(p)" style="border:none; background:none; font-size: 16px; cursor: pointer;">✏️</button>
-                        <button @click="deleteProduct(p.id)" style="border:none; background:none; font-size: 16px; cursor: pointer;">🗑</button>
-                     </div>
-                   </div>
-                 </div>
+     style="display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #f2f2f7;"
+     :style="{ opacity: p?.hidden ? '0.4' : '1' }">
+    <img :src="p.images ? p.images[0] : ''" style="width: 40px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;">
+    <div style="flex: 1; min-width: 0;">
+        <div style="font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.title }}</div>
+        <div style="font-size: 11px; color: #8e8e93;">{{ p.price }} ₽</div>
+    </div>
+    <div style="display: flex; gap: 12px;">
+        <button @click="editProduct(p)" style="border:none; background:none; font-size: 16px; cursor: pointer;">✏️</button>
+        <button @click="toggleVisibility(p)" style="border:none; background:none; cursor: pointer; font-size: 16px;">
+            {{ p?.hidden ? '👁️‍🗨️' : '👁️' }}
+        </button>
+        <button @click="deleteProduct(p.id)" style="border:none; background:none; font-size: 16px; cursor: pointer;">🗑</button>
+    </div>
+</div>
+
+
+
+
              </div>
 
            <hr style="margin: 30px 0; border: none; border-top: 2px solid #000;">.   
@@ -710,32 +720,41 @@ Vue.createApp({
 
         return { todayCount, todayRev, monthCount, monthRev, allCount, allRev };
     },
-        filteredProducts() {
-            // Защитное программирование: проверка на наличие продуктов
-            if (!this.products || this.products.length === 0) return [];
-            
-            try {
-                return this.products.filter(p => {
-                    if (!p || p.hidden) return false;
-                    
-                    // Поиск
-                    const titleMatch = p.title ? p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) : false;
-                    
-                    // Категория (строгая проверка по регистру и формату)
-                    let catMatch = true;
-                    if (this.currentCat !== '') {
-                        const prodCat = p.category ? p.category.toLowerCase().trim() : '';
-                        const targetCat = this.currentCat.toLowerCase().trim();
-                        catMatch = (prodCat === targetCat);
-                    }
-                    
-                    return titleMatch && catMatch;
-                });
-            } catch (e) {
-                console.error("Ошибка фильтрации:", e);
-                return [];
+       filteredProducts() {
+    // 1. Быстрая проверка на наличие данных
+    if (!this.products || !Array.isArray(this.products)) return [];
+    
+    try {
+        // 2. Подготавливаем данные для поиска один раз (оптимизация)
+        const query = (this.searchQuery || '').toLowerCase().trim();
+        const targetCat = (this.currentCat || '').toLowerCase().trim();
+
+        return this.products.filter(p => {
+            // 3. Защита: проверяем, что объект товара существует
+            if (!p) return false;
+
+            // 4. СКРЫТИЕ: Если товар помечен как hidden, не показываем его клиенту
+            // (p?.hidden корректно вернет false, если свойства еще нет в базе)
+            if (p?.hidden === true) return false;
+
+            // 5. ПОИСК
+            const titleMatch = query === '' || 
+                (p.title && String(p.title).toLowerCase().includes(query));
+
+            // 6. КАТЕГОРИЯ
+            let catMatch = true;
+            if (targetCat !== '' && targetCat !== 'все') {
+                const prodCat = p.category ? String(p.category).toLowerCase().trim() : '';
+                catMatch = (prodCat === targetCat);
             }
-        },
+
+            return titleMatch && catMatch;
+        });
+    } catch (e) {
+        console.error("Критическая ошибка фильтрации:", e);
+        return [];
+    }
+},
         favList() {
             if (!this.products) return [];
             return this.products.filter(p => this.favorites.includes(p.id));
@@ -1002,17 +1021,25 @@ Vue.createApp({
 },
 
         async toggleVisibility(p) {
-            await window.fb.updateDoc(window.fb.doc(window.db, "products", p.id), { hidden: !p.hidden });
-        },
+    if (!p || !p.id) return;
+    
+    // 1. Сначала меняем локально для мгновенного эффекта
+    p.hidden = !p.hidden;
+    this.vib(); // Вибрация для подтверждения действия
 
-        async manageCategory(action, id) {
-            if (action === 'add' && this.newCat) {
-                await window.fb.addDoc(window.fb.collection(window.db, "categories"), { name: this.newCat.trim() });
-                this.newCat = '';
-            } else if (action === 'del') {
-                await window.fb.deleteDoc(window.fb.doc(window.db, "categories", id));
-            }
-        },
+    try {
+        // 2. Сохраняем в Firebase
+        const productRef = window.fb.doc(window.db, "products", p.id);
+        await window.fb.updateDoc(productRef, { 
+            hidden: p.hidden 
+        });
+    } catch (e) {
+        console.error("Ошибка сохранения статуса:", e);
+        // Если база выдала ошибку — возвращаем как было
+        p.hidden = !p.hidden;
+        alert("Ошибка при сохранении статуса в базу данных");
+    }
+},
 
         async checkout() {
     // 1. Валидация контактов
