@@ -1102,36 +1102,48 @@ async updateStatus(order, status) {
 
        printOrder(o) {
     try {
-        // Проверяем наличие товаров, чтобы map не выдал ошибку
-        const itemsList = (o.items && Array.isArray(o.items)) 
-            ? o.items.map(i => `▫️ ${i.title} (${i.selSize || '-'}): ${i.price}р`).join('\n') 
-            : 'Товары не найдены';
+        let itemsList = "";
+
+        // 1. Проверяем, есть ли массив items
+        if (o.items && Array.isArray(o.items) && o.items.length > 0) {
+            itemsList = o.items.map(i => `▫️ ${i.title} (${i.size || i.selSize || '-'}) — ${i.price}₽`).join('\n');
+        } 
+        // 2. Проверяем, может быть массив называется cart
+        else if (o.cart && Array.isArray(o.cart) && o.cart.length > 0) {
+            itemsList = o.cart.map(i => `▫️ ${i.title} (${i.size || i.selSize || '-'}) — ${i.price}₽`).join('\n');
+        }
+        // 3. Проверяем, есть ли готовый текст заказа
+        else if (o.items_text) {
+            itemsList = o.items_text;
+        } 
+        // 4. Если ничего не нашли
+        else {
+            itemsList = "Состав заказа временно недоступен";
+        }
 
         const checkText = `
-🧾 ЗАКАЗ №${o.order_id}
+🧾 ЗАКАЗ №${o.order_id || '---'}
 ━━━━━━━━━━━━━━━━━━━━
 👤 Клиент: ${o.customer_name || 'Не указан'}
 📞 Тел: ${o.customer_phone || 'Не указан'}
-🚚 Доставка: ${o.delivery || 'Не указано'}
-📍 Адрес: ${o.address || 'Не указан'}
+🚚 Доставка: ${o.delivery || o.delivery_type || 'Не указана'}
+📍 Адрес: ${o.address || o.customer_address || 'Не указан'}
 ━━━━━━━━━━━━━━━━━━━━
 📦 СОСТАВ:
 ${itemsList}
 
-💰 ИТОГО: ${o.order_total || 0} руб.
+💰 ИТОГО: ${o.order_total || o.total_price || 0} ₽
 ━━━━━━━━━━━━━━━━━━━━
-📅 Дата: ${o.createdAt ? new Date(o.createdAt).toLocaleString() : 'Не указана'}
+📅 Дата: ${o.createdAt ? (o.createdAt.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString() : new Date(o.createdAt).toLocaleString()) : 'Не указана'}
         `;
-        
-        // Показываем в Telegram
-        tg.showAlert(checkText);
 
-        // Добавим вибрацию, чтобы чувствовать нажатие
+        tg.showAlert(checkText);
+        
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
     } catch (e) {
-        console.error("Ошибка в ЧЕКЕ:", e);
-        tg.showAlert("Ошибка при формировании чека: " + e.message);
+        console.error("Ошибка:", e);
+        tg.showAlert("Не удалось загрузить состав заказа");
     }
 },
 updateChart() {
