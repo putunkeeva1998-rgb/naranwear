@@ -486,15 +486,11 @@
         <button @click="deleteProduct(p.id)" style="border:none; background:none; font-size: 16px; cursor: pointer;">🗑</button>
     </div>
 </div>
-
-
-
-
              </div>
 
-           <hr style="margin: 30px 0; border: none; border-top: 2px solid #000;">.   
+           <hr style="margin: 6px 0; border: none; border-top: 2px solid #000;">.   
 
-            <h3 class="brand-name" style="font-size:12px; margin-top:40px;">ЗАКАЗЫ ({{allOrders.length}}) | ВЫРУЧКА: {{revenue}} ₽</h3>
+            <h3 class="brand-name" style="font-size:12px; margin-top:2px;">ЗАКАЗЫ ({{allOrders.length}}) | ВЫРУЧКА: {{revenue}} ₽</h3>
             <div v-for="o in allOrders" :key="o.id" 
                 class="order-card" 
                  style="background: #ffffff; 
@@ -505,13 +501,8 @@
                   border: 1px solid rgba(0,0,0,0.03);">
 
                
-
-
-            
-
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
         <div>
-            
             <div style="font-weight: 800; font-size: 16px; display: block;">#{{ o.order_id }}</div>
         </div>
 
