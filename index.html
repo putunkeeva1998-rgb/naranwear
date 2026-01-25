@@ -1152,8 +1152,9 @@ async deleteOrder(docId) {
         const date = o.createdAt ? (o.createdAt.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('ru-RU') : new Date(o.createdAt).toLocaleString('ru-RU')) : '---';
         
         // 1. Собираем товары (ищем во всех возможных полях базы)
-        const itemsList = o.items || o.cartItems || [];
-        let itemsHtml = "";
+        const itemsText = this.cart.map(item => 
+            `▫️ ${item.title} ${item.selSize ? '('+item.selSize+')' : ''} x${item.qty} — ${item.price * item.qty} ₽`
+        ).join('\n');
 
         if (Array.isArray(itemsList) && itemsList.length > 0) {
             itemsHtml = itemsList.map(i => `
