@@ -1150,10 +1150,21 @@ async deleteOrder(docId) {
 },
 
        printOrder(o) {
+    this.vib(); // Виброотклик
+
+    // УЛУЧШЕНИЕ 1: Открываем окно СРАЗУ (до try/catch). 
+    // На телефонах это единственный способ избежать блокировки popup.
+    const win = window.open('', '_blank');
+    
+    if (!win) {
+        alert("Пожалуйста, разрешите всплывающие окна в настройках браузера или смените браузер на Safari/Chrome.");
+        return;
+    }
+
     try {
         const date = o.createdAt ? (o.createdAt.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('ru-RU') : new Date(o.createdAt).toLocaleString('ru-RU')) : '---';
         
-        // 1. Собираем товары (ищем во всех возможных полях базы)
+        // Твоя оригинальная логика сбора товаров
         const itemsList = o.items || o.cartItems || [];
         let itemsHtml = "";
 
@@ -1164,7 +1175,6 @@ async deleteOrder(docId) {
                         <div style="font-weight: 800; font-size: 20px; text-transform: uppercase; margin-bottom: 10px;">
                             ${i.title || 'Товар без названия'}
                         </div>
-                        
                         <div style="display: flex; gap: 30px; font-size: 14px; color: #333;">
                             <span><b>Цвет:</b> ${i.color || '-'}</span>
                             <span><b>Размер:</b> ${i.size || i.selSize || '-'}</span>
@@ -1180,16 +1190,10 @@ async deleteOrder(docId) {
                 </tr>
             `).join('');
         } else {
-            // Если товаров нет в массиве, выводим items_text
             itemsHtml = `<tr><td colspan="2" style="padding: 40px 0; font-size: 16px; white-space: pre-wrap;">${o.items_text || 'Список товаров не найден'}</td></tr>`;
         }
 
-        const win = window.open('', '_blank');
-        if (!win) {
-            alert("Пожалуйста, разрешите всплывающие окна в браузере.");
-            return;
-        }
-
+        // Твой оригинальный дизайн с мобильными правками в шрифтах
         win.document.write(`
             <html>
             <head>
@@ -1197,8 +1201,9 @@ async deleteOrder(docId) {
                 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
                 <style>
                     @page { size: A4 portrait; margin: 15mm; }
-                    body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; color: #000; }
-                    .wrapper { width: 100%; max-width: 210mm; margin: auto; }
+                    /* УЛУЧШЕНИЕ 2: Добавлены системные шрифты, если Montserrat не успеет загрузиться на телефоне */
+                    body { font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; color: #000; }
+                    .wrapper { width: 100%; max-width: 210mm; margin: auto; padding: 10px; }
                     .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
                     .brand h1 { margin: 0; font-size: 36px; font-weight: 800; }
                     .order-info { text-align: right; }
@@ -1255,10 +1260,25 @@ async deleteOrder(docId) {
                         Спасибо за ваш выбор! Будем рады видеть вас снова в NARAN.
                     </div>
                 </div>
+                
                 <script>
                     window.onload = function() { 
-                        window.print(); 
-                        setTimeout(() => { window.close(); }, 500); 
+                        // УЛУЧШЕНИЕ 3: Фокусировка и задержка перед печатью для мобильных браузеров
+                        setTimeout(() => {
+                            window.focus();
+                            window.print();
+                            
+                            // УЛУЧШЕНИЕ 4: Закрываем окно только после того, как пользователь 
+                            // завершит работу с диалогом печати (onafterprint)
+                            window.onafterprint = function() {
+                                window.close();
+                            };
+                            
+                            // Запасной вариант для браузеров, не поддерживающих onafterprint
+                            setTimeout(() => { 
+                                // window.close(); // Можно оставить закомментированным, если нужно видеть чек
+                            }, 1000);
+                        }, 500);
                     };
                 <\/script>
             </body>
