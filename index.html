@@ -26,36 +26,31 @@
 /* 1. Оставляем черными только ссылки и иконки. КНОПКИ (button) отсюда УБИРАЕМ */
 /* 1. ЛУПА, БУРГЕР И ТЕКСТОВЫЕ ССЫЛКИ — КРАСИМ В ЧЕРНЫЙ */
 /* Добавляем конкретные классы, чтобы не задеть кнопки */
-.search-icon, 
-.burger-menu, 
+/* Убираем синий цвет везде, где он может появиться */
 a, 
-a span,
-.support-link {
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    text-decoration: none !important;
-}
-
-/* 2. ВЫБОР ДОСТАВКИ (Серые блоки) */
-/* Чтобы текст в кнопках выбора (Почта/Курьер) не синел */
+a *, 
+.burger-menu, 
+.search-icon, 
 .delivery-option, 
-.delivery-option span,
-.method-card {
+[onclick] {
     color: #000000 !important;
+    text-decoration: none !important;
     -webkit-text-fill-color: #000000 !important;
 }
 
-/* 3. ГЛАВНЫЕ ЧЕРНЫЕ КНОПКИ — ВСЕГДА БЕЛЫЙ ТЕКСТ */
+/* Возвращаем БЕЛЫЙ цвет тексту в черных кнопках */
+/* Мы делаем селектор очень мощным, чтобы он перекрыл всё */
+button.btn-black, 
+button.add-btn, 
 .btn-black, 
-.add-btn, 
-.checkout-btn,
-button.btn-black {
+.add-btn,
+.checkout-btn {
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     background-color: #000000 !important;
 }
 
-/* 4. УБИРАЕМ СИНИЙ БЛИК ПРИ НАЖАТИИ */
+/* Убираем серый/синий квадрат при нажатии на иконки */
 * {
     -webkit-tap-highlight-color: transparent !important;
 }
