@@ -153,6 +153,23 @@
         .status-ready { background: #e8f5e9; color: #2e7d32; }
         .status-process { background: #fff3e0; color: #ef6c00; }
 
+        .search-box i, .search-box svg {
+        color: #000000 !important;
+        fill: #000000 !important;
+        }
+
+        .header-burger span, 
+        .header-burger::before, 
+        .header-burger::after {
+         background-color: #000000 !important;
+         }
+
+         .btn-support {
+         background-color: #000000 !important;
+        color: #ffffff !important;
+        border: none;
+        }
+
         [v-cloak] { display: none; }
     </style>
 </head>
@@ -1038,6 +1055,14 @@ Vue.createApp({
         // Если база выдала ошибку — возвращаем как было
         p.hidden = !p.hidden;
         alert("Ошибка при сохранении статуса в базу данных");
+    }
+},
+async manageCategory(action, id) { // Добавь async здесь
+    if (action === 'add' && this.newCat) {
+        await window.fb.addDoc(window.fb.collection(window.db, "categories"), { name: this.newCat.trim() });
+        this.newCat = '';
+    } else if (action === 'del') {
+        await window.fb.deleteDoc(window.fb.doc(window.db, "categories", id));
     }
 },
 
