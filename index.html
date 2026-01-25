@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NARAN PREMIUM</title>
+    <meta name="format-detection" content="telephone=no">
+    <title>NARAN</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -21,15 +22,29 @@
             --accent: #000000;
             --red: #ff3b30;
         }
-        a[href^="tel"] {
-        color: inherit !important;
-        text-decoration: none !important;
-         }
-/* Общий сброс для ссылок, чтобы они не синели */
-       a {
-        color: inherit !important;
-        text-decoration: none !important;
-        }
+        /* 1. Делаем все ссылки, иконки и меню черными */
+a, 
+.burger-menu, 
+.search-icon, 
+[onclick], 
+button {
+    color: #000000 !important;
+    text-decoration: none !important;
+    -webkit-text-fill-color: #000000 !important; /* Для Safari на iPhone */
+}
+
+/* 2. Убираем синее выделение при нажатии на мобильных */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* 3. Если "Написать в поддержку" — это кнопка или ссылка внутри div */
+.support-button, 
+.support-link,
+a span {
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+     }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { 
@@ -365,7 +380,7 @@
         <div style="text-align:center; margin-bottom: 30px;">
             <img :src="user.photo_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" style="width:80px; height:80px; border-radius:50%; border: 1px solid #000; padding: 3px;">
             <div style="font-weight:800; margin-top:10px; text-transform:uppercase;">{{user.first_name || 'Клиент'}}</div>
-            <button @click="openSupport" class="cat-tab" style="margin-top:15px; width:100%;">НАПИСАТЬ В ПОДДЕРЖКУ</button>
+            <button @click="openSupport" class="cat-tab" style="margin-top:15px; width:100%; color: #000; -webkit-text-fill-color: #000;">НАПИСАТЬ В ПОДДЕРЖКУ</button>
         </div>
 
         <div v-if="!isAdmin">
