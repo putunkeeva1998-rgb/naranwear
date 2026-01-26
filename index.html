@@ -367,50 +367,60 @@
     </div>
 
     <div v-if="tab === 'profile'">
-        <div style="text-align:center; margin-bottom: 30px;">
-            <img :src="user.photo_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" style="width:80px; height:80px; border-radius:50%; border: 1px solid #000; padding: 3px;">
-            <div style="font-weight:800; margin-top:10px; text-transform:uppercase;">{{user.first_name || 'Клиент'}}</div>
-            <button @click="openSupport" class="cat-tab" style="margin-top:15px; width:100%;">НАПИСАТЬ В ПОДДЕРЖКУ</button>
-        </div>
-
-        <div v-if="!isAdmin">
-            <h3 class="brand-name" style="font-size: 14px;">МОИ ЗАКАЗЫ</h3>
-            <div v-if="myOrders.length === 0" style="padding:20px; text-align:center; font-size:12px;">У вас пока нет заказов</div>
-            <div v-for="o in myOrders" :key="o.id" class="order-card">
-                <div style="display:flex; justify-content:space-between; font-weight:800; font-size:11px;">
-                    <span>ЗАКАЗ №{{o.order_id}}</span>
-                    <span>{{o.total}} ₽</span>
-                </div>
-                <div :class="['status-badge', o.status === 'Доставлен' ? 'status-ready' : 'status-process']">{{o.status || 'В обработке'}}</div>
-                <div style="font-size:9px; margin-top:8px; color:gray;">{{o.date}}</div>
-            </div>
-            
-
-            <div v-for="o in myOrders" :key="o.id" class="order-card" style="background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #eee;">
-    <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 11px; margin-bottom: 10px;">
-        <span>ЗАКАЗ №{{ o.order_id || o.id.slice(0,6) }}</span>
-        <span :style="{color: o.status === 'Доставлен' ? '#34c759' : '#007aff'}">{{ o.status }}</span>
+    <div style="text-align:center; margin-bottom: 30px;">
+        <img :src="user.photo_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" style="width:80px; height:80px; border-radius:50%; border: 1px solid #000; padding: 3px;">
+        <div style="font-weight:800; margin-top:10px; text-transform:uppercase;">{{user.first_name || 'Клиент'}}</div>
+        <button @click="openSupport" class="cat-tab" style="margin-top:15px; width:100%;">НАПИСАТЬ В ПОДДЕРЖКУ</button>
     </div>
 
-    <div v-for="item in o.items" :key="item.id" style="display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f9f9f9;">
-             <img :src="item.image" style="width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: #f5f5f5;">
+    <h2 class="brand-name" style="font-size: 16px; margin-bottom: 20px;">МОИ ЗАКАЗЫ</h2>
+    
+    <div v-if="myOrders.length === 0" style="text-align:center; padding:40px; color:var(--gray);">
+        У ВАС ПОКА НЕТ ЗАКАЗОВ
+    </div>
+
+    <div v-for="o in myOrders" :key="o.id" class="order-card" style="background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #eee; position: relative;">
+        
+        <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 11px; margin-bottom: 10px;">
+            <span>ЗАКАЗ №{{ o.order_id || o.id.slice(0,6) }}</span>
+            <span :style="{color: o.status === 'Доставлен' ? '#34c759' : '#007aff'}">
+                {{ o.status || 'В обработке' }}
+            </span>
+        </div>
+
+        <div v-for="item in o.items" :key="item.id" style="display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f9f9f9; position: relative;">
+            <img :src="item.image" style="width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: #f5f5f5;">
+            
             <div style="flex: 1;">
-            <div style="font-size: 12px; font-weight: 700;">{{ item.title }}</div>
-            <div style="font-size: 10px; color: var(--gray);">Размер: {{ item.selSize || item.size || '—' }}</div>
+                <div style="font-size: 12px; font-weight: 700;">{{ item.title }}</div>
+                <div style="font-size: 10px; color: var(--gray);">Размер: {{ item.selSize || item.size || '—' }}</div>
             </div>
 
             <button v-if="o.status === 'Доставлен' && !o.reviewed" 
-             @click.stop="openReviewModal(o, item)" 
-             style="cursor: pointer; z-index: 10; position: relative; background: #000; color: #fff; border: none; padding: 7px 14px; border-radius: 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: all 0.2s active; transform: scale(0.95);">
-            ОТЗЫВ
-           </button>
-            </div>
-    
-             <div style="font-size: 10px; font-weight: 800; margin-top: 12px; text-align: right;">
-             ИТОГО: {{ o.order_total || o.total }} ₽
-            </div>
-      </div>
+                @click.stop="openReviewModal(o, item)" 
+                style="cursor: pointer; z-index: 99; position: relative; background: #000; color: #fff; border: none; padding: 8px 14px; border-radius: 10px; font-size: 10px; font-weight: 800; text-transform: uppercase;">
+                ОТЗЫВ
+            </button>
+        </div>
 
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #eee;">
+            <div style="font-size: 9px; color: gray;">{{ o.date || '' }}</div>
+            <div style="font-size: 11px; font-weight: 800;">ИТОГО: {{ o.order_total || o.total }} ₽</div>
+        </div>
+    </div> </div> ```
+
+---
+
+### Почему это была ошибка:
+1.  **Незакрытые `div`**: Когда ты открываешь `div` для заказа, но не закрываешь его в конце карточки, браузер думает, что следующий заказ находится «внутри» предыдущего. В итоге кнопки накладываются друг на друга невидимыми слоями, и нижние перестают нажиматься.
+2.  **Лишний `v-if="profile"`**: В твоем коде была проверка `v-if="profile"`, но в `data()` такой переменной нет. Это приводило к тому, что блок заказов мог вообще исчезнуть.
+3.  **Иерархия**: Теперь кнопка «ОТЗЫВ» имеет `z-index: 99`, она всегда будет сверху и точно нажмётся.
+
+
+
+**Как проверить:** Замени код, сохрани и посмотри в профиле. Теперь заказы должны идти один за другим, и кнопка «ОТЗЫВ» (если статус в базе «Доставлен») станет кликабельной. 
+
+Хочешь, чтобы я проверил, как закрыты остальные вкладки (корзина, каталог)?
 
         <div v-if="isAdmin" class="admin-section">
             <h2 class="brand-name" style="font-size: 14px; margin-bottom: 20px;">АДМИН-ПАНЕЛЬ</h2>
@@ -1422,7 +1432,7 @@ getProductRating(productId) {
             this.starRating = 5;
             this.reviewText = '';
             this.reviewImages = [];
-            
+
             this.showReviewModal = true;
         },
      // Строка ~1060 (внутри methods)
