@@ -1189,13 +1189,14 @@ async deleteOrder(docId) {
 
        printOrder(o) {
     try {
+        this.vib(); // Если есть функция вибрации
         const date = o.createdAt ? (o.createdAt.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('ru-RU') : new Date(o.createdAt).toLocaleString('ru-RU')) : '---';
         
-        // 1. Собираем товары (ищем во всех возможных полях базы)
-        const itemsText = this.cart.map(item => 
-            `▫️ ${item.title} ${item.selSize ? '('+item.selSize+')' : ''} x${item.qty} — ${item.price * item.qty} ₽`
-        ).join('\n');
+        // 1. ОПРЕДЕЛЯЕМ МАССИВ ТОВАРОВ (важно брать из заказа 'o', а не из 'this.cart')
+        const itemsList = o.items || []; 
+        let itemsHtml = '';
 
+        // 2. ГЕНЕРИРУЕМ HTML ТОВАРОВ
         if (Array.isArray(itemsList) && itemsList.length > 0) {
             itemsHtml = itemsList.map(i => `
                 <tr style="border-bottom: 2px solid #f0f0f0;">
@@ -1203,23 +1204,22 @@ async deleteOrder(docId) {
                         <div style="font-weight: 800; font-size: 20px; text-transform: uppercase; margin-bottom: 10px;">
                             ${i.title || 'Товар без названия'}
                         </div>
-                        
                         <div style="display: flex; gap: 30px; font-size: 14px; color: #333;">
-                            <span><b>Цвет:</b> ${i.color || '-'}</span>
-                            <span><b>Размер:</b> ${i.size || i.selSize || '-'}</span>
-                            <span><b>Кол-во:</b> ${i.count || 1} шт.</span>
+                            <span><b>Цвет:</b> ${i.selColor || i.color || '-'}</span>
+                            <span><b>Размер:</b> ${i.selSize || i.size || '-'}</span>
+                            <span><b>Кол-во:</b> ${i.qty || i.count || 1} шт.</span>
                             <span><b>Цена за ед.:</b> ${i.price || 0} ₽</span>
                         </div>
                     </td>
                     <td style="padding: 20px 0; text-align: right; vertical-align: middle;">
                         <div style="font-weight: 800; font-size: 20px;">
-                            ${(i.price || 0) * (i.count || 1)} ₽
+                            ${(i.price || 0) * (i.qty || i.count || 1)} ₽
                         </div>
                     </td>
                 </tr>
             `).join('');
         } else {
-            // Если товаров нет в массиве, выводим items_text
+            // Если массив объектов пуст, используем готовый текст из items_text
             itemsHtml = `<tr><td colspan="2" style="padding: 40px 0; font-size: 16px; white-space: pre-wrap;">${o.items_text || 'Список товаров не найден'}</td></tr>`;
         }
 
@@ -1238,29 +1238,11 @@ async deleteOrder(docId) {
                     @page { size: A4 portrait; margin: 15mm; }
                     body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; color: #000; }
                     .wrapper { width: 100%; max-width: 210mm; margin: auto; }
-                    .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 16px;
-    height: 60px;
-    background: #ffffff;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 1px solid #f2f2f7;
-}
-                   .brand-name {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    font-weight: 800;
-    font-size: 18px;
-    letter-spacing: 1px;
-    color: #000;
-    white-space: nowrap;
-}
+                    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 4px solid #000; padding-bottom: 20px; }
+                    .brand h1 { margin: 0; font-size: 35px; font-weight: 800; letter-spacing: -1px; }
+                    .brand p { margin: 0; color: #888; font-weight: 700; font-size: 12px; }
                     .order-info { text-align: right; }
+                    .order-info h2 { margin: 0; font-size: 24px; font-weight: 800; }
                     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
                     .address-box { border: 2px solid #000; padding: 20px; margin-bottom: 30px; }
                     table { width: 100%; border-collapse: collapse; }
@@ -1275,7 +1257,6 @@ async deleteOrder(docId) {
                         <div class="brand"><h1>NARAN PREMIUM</h1><p>ОФИЦИАЛЬНЫЙ ЧЕК ЗАКАЗА</p></div>
                         <div class="order-info"><h2>ЗАКАЗ #${o.order_id}</h2><p>Дата: ${date}</p></div>
                     </div>
-
                     <div class="info-grid">
                         <div>
                             <small style="color:#888; font-weight:700;">ПОКУПАТЕЛЬ</small>
@@ -1284,15 +1265,13 @@ async deleteOrder(docId) {
                         </div>
                         <div style="text-align: right;">
                             <small style="color:#888; font-weight:700;">СПОСОБ ДОСТАВКИ</small>
-                            <p style="font-size: 18px; font-weight: 700; margin: 5px 0;">${o.delivery || o.delivery_type || 'Стандарт'}</p>
+                            <p style="font-size: 18px; font-weight: 700; margin: 5px 0;">${o.delivery || 'Стандарт'}</p>
                         </div>
                     </div>
-
                     <div class="address-box">
                         <small style="color:#888; font-weight:700;">АДРЕС ДОСТАВКИ:</small>
-                        <p style="font-size: 22px; font-weight: 800; margin: 10px 0 0 0;">${o.address || 'Самовывоз / Не указан'}</p>
+                        <p style="font-size: 22px; font-weight: 800; margin: 10px 0 0 0;">${o.address || 'Не указан'}</p>
                     </div>
-
                     <table>
                         <thead>
                             <tr>
@@ -1304,20 +1283,15 @@ async deleteOrder(docId) {
                             ${itemsHtml}
                         </tbody>
                     </table>
-
                     <div class="total-section">
                         <div style="font-weight: 700; color: #888;">ИТОГО К ОПЛАТЕ</div>
-                        <h2>${o.order_total || o.total_price || 0} ₽</h2>
-                    </div>
-
-                    <div style="margin-top: 50px; text-align: center; color: #888; font-size: 12px;">
-                        Спасибо за ваш выбор! Будем рады видеть вас снова в NARAN PREMIUM.
+                        <h2>${o.order_total || 0} ₽</h2>
                     </div>
                 </div>
                 <script>
                     window.onload = function() { 
                         window.print(); 
-                        setTimeout(() => { window.close(); }, 500); 
+                        setTimeout(() => { window.close(); }, 700); 
                     };
                 <\/script>
             </body>
@@ -1325,8 +1299,8 @@ async deleteOrder(docId) {
         `);
         win.document.close();
     } catch (e) {
-        console.error(e);
-        alert("Ошибка печати. Проверьте консоль браузера.");
+        console.error("Ошибка печати:", e);
+        alert("Ошибка при формировании чека.");
     }
 },
 updateChart() {
