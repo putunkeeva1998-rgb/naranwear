@@ -394,6 +394,22 @@
             </div>
 
             <button v-if="o.status === 'Доставлен' && !o.reviewed" 
+             @click.stop="openReviewModal(o, item)" 
+             style="
+            background: #000; 
+            color: #fff; 
+            border: none; 
+            padding: 8px 14px; 
+            border-radius: 10px; 
+            font-size: 10px; 
+            font-weight: 800;
+            cursor: pointer;
+            z-index: 10;
+            ">
+           ОТЗЫВ
+            </button>
+
+            <button v-if="o.status === 'Доставлен' && !o.reviewed" 
                 @click.stop="openReviewModal(o, item)" 
                 style="cursor: pointer; z-index: 999; position: relative; background: #000; color: #fff; border: none; padding: 8px 14px; border-radius: 10px; font-size: 10px; font-weight: 800; -webkit-appearance: none;">
                 ОТЗЫВ
@@ -521,7 +537,7 @@
 </div>
              </div>
 
-           <hr style="margin: 6px 0; border: none; border-top: 2px solid #000;">.   
+           <hr style="margin: 6px 0; border: none; border-top: 2px solid #000;">  
 
             <h3 class="brand-name" style="font-size:12px; margin-top:2px;">ЗАКАЗЫ ({{allOrders.length}}) | ВЫРУЧКА: {{revenue}} ₽</h3>
             <div v-for="o in allOrders" :key="o.id" 
@@ -724,7 +740,7 @@ Vue.createApp({
             showReviewModal: false,   // Открыто ли окно
             selectedOrderForReview: null,     // Храним объект заказа
             selectedProductForReview: null,   // Храним объект товара
-            rating: 5,            // Оценка по умолчанию
+            rating: 0,            // Оценка по умолчанию
             reviewText: '',           // Текст отзыва
             reviewImages: [],                 // Массив для нескольких фото
 
@@ -1361,45 +1377,6 @@ async deleteOrder(docId) {
         alert("Ошибка печати. Проверьте консоль браузера.");
     }
 },
-async leaveReview(order, item) {
-    const rating = prompt("Оцените товар от 1 до 5:", "5");
-    const text = prompt("Напишите ваш отзыв:");
-    
-    // Проверяем, что пользователь ввел данные и оценка — это число 1-5
-    if (rating && text && !isNaN(rating) && rating >= 1 && rating <= 5) {
-        try {
-            this.loading = true;
-            
-            // 1. Сохраняем отзыв в коллекцию reviews
-            await window.fb.addDoc(window.fb.collection(window.db, "reviews"), {
-                productId: item.id,
-                orderId: order.id,
-                userId: this.user.id,
-                userName: this.user.first_name || "Клиент",
-                rating: parseInt(rating),
-                text: text,
-                createdAt: window.fb.serverTimestamp()
-            });
-
-            // 2. ОБНОВЛЯЕМ ЗАКАЗ: ставим отметку, что отзыв оставлен
-            // Это нужно, чтобы кнопка "ОТЗЫВ" скрылась
-            const orderRef = window.fb.doc(window.db, "orders", order.id);
-            await window.fb.updateDoc(orderRef, {
-                reviewed: true
-            });
-
-            alert("Спасибо! Ваш отзыв поможет другим покупателям. ❤️");
-            this.vib(); // Твоя функция вибрации
-        } catch (e) {
-            console.error(e);
-            alert("Ошибка при сохранении отзыва: " + e.message);
-        } finally {
-            this.loading = false;
-        }
-    } else if (rating) {
-        alert("Пожалуйста, введите корректную оценку от 1 до 5");
-    }
-},
 getProductrating(productId) {
         // Фильтруем все отзывы, оставляя только те, что относятся к этому товару
         const productReviews = this.allReviews.filter(r => r.productId === productId);
@@ -1439,32 +1416,67 @@ async uploadReviewImages(e) {
         },
 
 async submitFinalReview() {
-            if (!this.reviewText.trim()) return alert("Напишите текст отзыва");
-            this.loading = true;
-            try {
-                await window.fb.addDoc(window.fb.collection(window.db, "reviews"), {
-                    productId: this.selectedProductForReview.id,
-                    orderId: this.selectedOrderForReview.id,
-                    rating: Number(this.rating),
-                    text: this.reviewText,
-                    images: this.reviewImages,
-                    userName: this.user.first_name || "Покупатель",
-                    createdAt: window.fb.serverTimestamp()
-                });
+    // 1. Валидация входных данных
+    if (this.rating === 0) {
+        alert("Пожалуйста, поставьте оценку (звезды)!");
+        return;
+    }
+    if (this.reviewText.trim().length < 5) {
+        alert("Пожалуйста, напишите небольшой отзыв (хотя бы пару слов).");
+        return;
+    }
+    
+    // Блокируем повторные нажатия, пока идет загрузка
+    if (this.loading) return;
 
-                // Помечаем заказ как "с отзывом", чтобы кнопка исчезла
-                await window.fb.updateDoc(window.fb.doc(window.db, "orders", this.selectedOrderForReview.id), {
-                    reviewed: true
-                });
+    try {
+        this.loading = true;
+        this.vib(); // Вибрация при начале отправки
 
-                this.showReviewModal = false;
-                tg.showAlert("⭐ Спасибо за отзыв!");
-            } catch (e) { 
-                alert("Ошибка сохранения: " + e.message); 
-            } finally { 
-                this.loading = false; 
-            }
-        },
+        // 2. Формируем объект отзыва
+        const reviewData = {
+            productId: this.selectedProductForReview.id,
+            productTitle: this.selectedProductForReview.title || "Товар", // Полезно для истории
+            orderId: this.selectedOrderForReview.id,
+            userId: this.user.id || 0,
+            userName: this.user.first_name || "Клиент",
+            rating: Number(this.rating),
+            text: this.reviewText.trim(),
+            images: this.reviewImages || [],
+            createdAt: window.fb.serverTimestamp() 
+        };
+
+        // 3. Выполняем обе операции одновременно (Batch-подобный подход)
+        // Это ускоряет работу приложения
+        await Promise.all([
+            // Сохраняем отзыв в коллекцию reviews
+            window.fb.addDoc(window.fb.collection(window.db, "reviews"), reviewData),
+            
+            // Обновляем заказ в коллекции orders
+            window.fb.updateDoc(window.fb.doc(window.db, "orders", this.selectedOrderForReview.id), {
+                reviewed: true,
+                reviewedAt: window.fb.serverTimestamp()
+            })
+        ]);
+
+        // 4. Очистка состояния и уведомление
+        this.showReviewModal = false;
+        
+        // Сбрасываем поля, чтобы при открытии для другого товара окно было пустым
+        this.rating = 0;
+        this.reviewText = "";
+        this.reviewImages = [];
+        this.selectedProductForReview = null;
+
+        alert("Спасибо! Ваш отзыв успешно опубликован. ❤️");
+        
+    } catch (e) {
+        console.error("Firebase Error:", e);
+        alert("Произошла ошибка при отправке. Пожалуйста, проверьте интернет-соединение.");
+    } finally {
+        this.loading = false;
+    }
+},
 updateChart() {
     const ctx = document.getElementById('salesChart');
     if (!ctx) return;
@@ -1535,8 +1547,7 @@ updateChart() {
         this.user = { id: 0, first_name: 'Гость' }; 
     }
 
-    console.log("Admin Status:", this.isAdmin, "User ID:", this.user.id, this.tab = 'admin');
-
+    console.log("Admin Status:", this.isAdmin, "User ID:", this.user.id);
     const checkFb = setInterval(() => {
         if (window.db && window.fb) {
             clearInterval(checkFb);
