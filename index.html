@@ -754,10 +754,8 @@ Vue.createApp({
         
         // 1. Считает сумму ТОВАРОВ В КОРЗИНЕ (для кнопки оформления)
         total() {
-            return this.cart.reduce((sum, item) => {
-                return sum + (Number(item.price) * Number(item.qty));
-            }, 0);
-        },
+        return this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+         },
 
         // 2. Считает количество ШТУК в корзине (для красного кружка на иконке)
         cartCount() {
@@ -1058,22 +1056,20 @@ async manageCategory(action, id) { // Добавь async здесь
 
         const orderData = {
             order_id: orderId,
-            name: this.form.name,
-            customer_name: this.form.name, // Для бота
-            phone: this.form.phone,
-            customer_phone: this.form.phone, // Для бота
-            address: this.address || "Адрес не указан",
-            delivery: this.deliv || "Не выбрана", // Соответствует data.deliv
-            total: totalSum,
-            order_total: totalSum, // Для бота
-            items_text: this.cart.map(item => 
-                `▫️ ${item.title} ${item.selSize ? '('+item.selSize+')' : ''} — ${item.price} ₽`
-            ).join('\n'),
-            status: 'Новый',
-            user: {
-                id: Number(this.user.id), // Обязательно число
-                username: this.user.username || 'n/a'
-            }
+    name: this.form.name,           // Бот ищет 'name'
+    customer_name: this.form.name,  // Или 'customer_name'
+    phone: this.form.phone,         // Бот ищет 'phone'
+    customer_phone: this.form.phone,// Или 'customer_phone'
+    total: this.total,              // Бот ищет 'total'
+    order_total: this.total,        // Или 'order_total'
+    delivery: this.deliv,           // Способ доставки
+    address: this.address,          // Адрес
+    items_text: itemsText,          // Состав заказа текстом
+    status: 'Новый',
+    user: {
+        id: Number(this.user.id),   // СТРОГО числом для уведомлений бота
+        username: this.user.username || 'n/a'
+         }
         };
 
         // 1. Отправляем в Telegram (это летит в СМС боту)
