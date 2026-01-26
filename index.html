@@ -1328,8 +1328,23 @@ updateChart() {
     tg.ready();
     tg.expand();
     
+    
     // Получаем пользователя сразу
     this.user = tg.initDataUnsafe?.user || { id: 0, first_name: 'Гость' };
+
+    const tgData = tg.initDataUnsafe?.user;
+    if (tgData && tgData.id) {
+        this.user = {
+            id: Number(tgData.id), // Всегда приводим к числу для бота
+            first_name: tgData.first_name || 'Клиент',
+            last_name: tgData.last_name || '',
+            username: tgData.username || '',
+            photo_url: tgData.photo_url || ''
+        };
+    } else {
+        // Если открыли в браузере, а не в TG
+        this.user = { id: 0, first_name: 'Гость' };
+    }
 
     const checkFb = setInterval(() => {
         if (window.db && window.fb) {
