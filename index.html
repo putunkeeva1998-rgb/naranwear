@@ -755,7 +755,7 @@ Vue.createApp({
         // 1. Считает сумму ТОВАРОВ В КОРЗИНЕ (для кнопки оформления)
         total() {
         return this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-         },
+        },
 
         // 2. Считает количество ШТУК в корзине (для красного кружка на иконке)
         cartCount() {
@@ -1040,6 +1040,7 @@ async manageCategory(action, id) { // Добавь async здесь
 },
 
        async checkout() {
+    // 1. Проверки
     if (this.cart.length === 0) return;
     if (!this.form.name || !this.form.phone) {
         alert("Пожалуйста, заполните имя и телефон");
@@ -1051,44 +1052,55 @@ async manageCategory(action, id) { // Добавь async здесь
     try {
         const orderId = Math.floor(Math.random() * 900000) + 100000;
         
-        // Считаем сумму (если у вас нет computed total)
+        // 2. Считаем сумму правильно
         const totalSum = this.cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
+
+        // 3. Генерируем текст состава заказа (теперь он определен!)
+        const itemsText = this.cart.map(item => 
+            `▫️ ${item.title} ${item.selSize ? '(' + item.selSize + ')' : ''} x${item.qty || 1} — ${item.price * (item.qty || 1)} ₽`
+        ).join('\n');
 
         const orderData = {
             order_id: orderId,
-    name: this.form.name,           // Бот ищет 'name'
-    customer_name: this.form.name,  // Или 'customer_name'
-    phone: this.form.phone,         // Бот ищет 'phone'
-    customer_phone: this.form.phone,// Или 'customer_phone'
-    total: this.total,              // Бот ищет 'total'
-    order_total: this.total,        // Или 'order_total'
-    delivery: this.deliv,           // Способ доставки
-    address: this.address,          // Адрес
-    items_text: itemsText,          // Состав заказа текстом
-    status: 'Новый',
-    user: {
-        id: Number(this.user.id),   // СТРОГО числом для уведомлений бота
-        username: this.user.username || 'n/a'
-         }
+            name: this.form.name,
+            customer_name: this.form.name,
+            phone: this.form.phone,
+            customer_phone: this.form.phone,
+            total: totalSum,             // Используем посчитанный totalSum
+            order_total: totalSum,       // Используем посчитанный totalSum
+            delivery: this.deliv || "Не указана",
+            address: this.address || "Адрес не указан",
+            items_text: itemsText,       // Теперь переменная существует
+            status: 'Новый',
+            user: {
+                id: Number(this.user.id),
+                username: this.user.username || 'n/a'
+            }
         };
 
-        // 1. Отправляем в Telegram (это летит в СМС боту)
+        // 4. Отправляем в Telegram (для бота)
+        const tg = window.Telegram.WebApp;
         tg.sendData(JSON.stringify(orderData));
 
-        // 2. Сохраняем в Firebase
-        await window.fb.addDoc(window.fb.collection(window.db, "orders"), {
+        // 5. Сохраняем в Firebase (исправленный метод addDoc)
+        const ordersRef = window.fb.collection(window.db, "orders");
+        
+        // ВАЖНО: используем addDoc, так как add может не существовать
+        await window.fb.addDoc(ordersRef, {
             ...orderData,
             createdAt: window.fb.serverTimestamp()
         });
 
         tg.showAlert(`✅ Заказ №${orderId} оформлен!`);
+        
+        // Очистка данных
         this.cart = [];
         this.saveCart();
-        this.tab = 'profile';
+        this.tab = 'profile'; // Переходим в профиль, чтобы увидеть заказ в истории
 
     } catch (e) {
-        console.error("Ошибка:", e);
-        alert("Ошибка: " + e.message);
+        console.error("Критическая ошибка оформления:", e);
+        alert("Ошибка оформления: " + e.message);
     } finally {
         this.loading = false;
     }
