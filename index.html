@@ -812,14 +812,26 @@ Vue.createApp({
 
         addToCart(p) {
     this.vib();
-    const cartId = p.id + p.selSize + p.selColor;
+    
+    // 1. Берем текущий цвет на основе индекса активной картинки (aIdx)
+    // Если массива цветов нет, пишем 'Стандарт'
+    const currentColor = (p.colors && p.colors[p.aIdx]) ? p.colors[p.aIdx] : 'Белый';
+    
+    // 2. Создаем уникальный ID для корзины (чтобы отличать Белый 42 от Черного 42)
+    const cartId = p.id + (p.selSize || '') + currentColor;
+    
     const exist = this.cart.find(i => i.cartId === cartId);
     
     if (exist) {
         exist.qty++;
     } else {
-        // Добавляем Number(p.price), чтобы цена всегда была числом
-        this.cart.push({ ...p, cartId, qty: 1, price: Number(p.price) });
+        this.cart.push({ 
+            ...p, 
+            cartId, 
+            selColor: currentColor, // Явно записываем цвет
+            qty: 1, 
+            price: Number(p.price) 
+        });
     }
     
     this.saveCart();
@@ -827,15 +839,28 @@ Vue.createApp({
     tg.HapticFeedback.notificationOccurred('success');
 },
 
-        quickAddToCart(p) {
+quickAddToCart(p) {
     this.vib();
-    const selectedSize = p.tempSize || p.sizes.split(',')[0].trim();
-    const cartId = p.id + selectedSize + p.color;
+    
+    // Выбираем первый размер из списка, если другой не выбран
+    const selectedSize = p.tempSize || (p.sizes ? p.sizes.split(',')[0].trim() : '');
+    // Берем текущий цвет
+    const currentColor = (p.colors && p.colors[p.aIdx]) ? p.colors[p.aIdx] : 'Белый';
+    
+    const cartId = p.id + selectedSize + currentColor;
     const exist = this.cart.find(i => i.cartId === cartId);
+    
     if (exist) {
         exist.qty++;
     } else {
-        this.cart.push({ ...p, cartId, selSize: selectedSize, selColor: product.colors[product.aIdx], qty: 1 });
+        this.cart.push({ 
+            ...p, 
+            cartId, 
+            selSize: selectedSize, 
+            selColor: currentColor, // Исправили 'product' на 'p' и добавили безопасность
+            qty: 1,
+            price: Number(p.price)
+        });
     }
     this.saveCart();
     tg.HapticFeedback.notificationOccurred('success');
@@ -1067,17 +1092,17 @@ async manageCategory(action, id) { // Добавь async здесь
         // Формируем текст состава заказа
         // 1. Формируем текст состава заказа с учетом Размера и Цвета
         const itemsText = this.cart.map(item => {
-            // Собираем характеристики в массив, чтобы не было лишних запятых
+            // Создаем массив характеристик
             let specs = [];
-            if (item.selSize) specs.push(`Р: ${item.selSize}`);
-            if (item.selColor) specs.push(`Цвет: ${item.selColor}`);
+            if (item.selSize) specs.push(item.selSize); // Размер
+            if (item.selColor) specs.push(item.selColor); // Цвет (Белый, Черный и т.д.)
             
-            const specsStr = specs.length > 0 ? `(${specs.join(', ')})` : '';
+            // Если характеристики есть, пишем их в скобках, если нет — оставляем пусто
+            const details = specs.length > 0 ? `(${specs.join(', ')})` : '';
             
-            return `▫️ ${item.title} ${specsStr} x${item.qty} — ${item.price * item.qty} ₽`;
+            return `▫️ ${item.title} ${details} x${item.qty} — ${item.price * item.qty} ₽`;
         }).join('\n');
 
-        // 2. Формируем объект заказа для Firebase
         const orderData = {
             order_id: orderId,
             customer_name: this.form.name,
@@ -1085,8 +1110,8 @@ async manageCategory(action, id) { // Добавь async здесь
             order_total: this.total,
             delivery: this.deliv,
             address: this.address,
-            items_text: itemsText, // Этот текст пойдет в Telegram
-            items: this.cart,      // Сохраняем массив объектов (включая цвета) для админки
+            items_text: itemsText, // Текст для бота
+            items: JSON.parse(JSON.stringify(this.cart)), // Полные данные для админки
             status: 'Новый',
             user: {
                 id: this.user.id || 0,
