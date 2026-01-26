@@ -812,26 +812,18 @@ Vue.createApp({
 
         addToCart(p) {
     this.vib();
+    // Определяем текущий цвет (если есть массив colors, берем по индексу aIdx)
+    const currentColor = (p.colors && p.colors[p.aIdx]) ? p.colors[p.aIdx] : (p.selColor || 'Белый');
     
-    // 1. Берем текущий цвет на основе индекса активной картинки (aIdx)
-    // Если массива цветов нет, пишем 'Стандарт'
-    const currentColor = (p.colors && p.colors[p.aIdx]) ? p.colors[p.aIdx] : 'Белый';
-    
-    // 2. Создаем уникальный ID для корзины (чтобы отличать Белый 42 от Черного 42)
+    // Безопасно собираем ID
     const cartId = p.id + (p.selSize || '') + currentColor;
-    
     const exist = this.cart.find(i => i.cartId === cartId);
     
     if (exist) {
         exist.qty++;
     } else {
-        this.cart.push({ 
-            ...p, 
-            cartId, 
-            selColor: currentColor, // Явно записываем цвет
-            qty: 1, 
-            price: Number(p.price) 
-        });
+        // Добавляем объект, заменяя 'product' на 'p'
+        this.cart.push({ ...p, cartId, selColor: currentColor, qty: 1, price: Number(p.price) });
     }
     
     this.saveCart();
@@ -841,10 +833,7 @@ Vue.createApp({
 
 quickAddToCart(p) {
     this.vib();
-    
-    // Выбираем первый размер из списка, если другой не выбран
     const selectedSize = p.tempSize || (p.sizes ? p.sizes.split(',')[0].trim() : '');
-    // Берем текущий цвет
     const currentColor = (p.colors && p.colors[p.aIdx]) ? p.colors[p.aIdx] : 'Белый';
     
     const cartId = p.id + selectedSize + currentColor;
@@ -853,14 +842,8 @@ quickAddToCart(p) {
     if (exist) {
         exist.qty++;
     } else {
-        this.cart.push({ 
-            ...p, 
-            cartId, 
-            selSize: selectedSize, 
-            selColor: currentColor, // Исправили 'product' на 'p' и добавили безопасность
-            qty: 1,
-            price: Number(p.price)
-        });
+        // ИСПРАВЛЕНО: теперь везде 'p', а не 'product'
+        this.cart.push({ ...p, cartId, selSize: selectedSize, selColor: currentColor, qty: 1, price: Number(p.price) });
     }
     this.saveCart();
     tg.HapticFeedback.notificationOccurred('success');
