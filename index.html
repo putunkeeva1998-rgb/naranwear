@@ -1570,7 +1570,7 @@ updateChart() {
 
             // 3. Загрузка товаров, категорий и отзывов (общие данные)
             window.fb.onSnapshot(window.fb.query(window.fb.collection(window.db, "products"), window.fb.orderBy("createdAt", "desc")), snap => {
-                this.products = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), aIdx: 0 }));
+                this.products = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), aIdx: 0, tempSize: null }));
             });
 
             window.fb.onSnapshot(window.fb.collection(window.db, "categories"), snap => {
