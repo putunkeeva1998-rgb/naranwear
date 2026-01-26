@@ -399,11 +399,11 @@
             <div style="font-size: 10px; color: var(--gray);">Размер: {{ item.selSize || item.size || '—' }}</div>
             </div>
 
-             <button v-if="o.status === 'Доставлен' && !o.reviewed" 
-            @click.stop="openReviewModal(o, item)" 
-            style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 800;">
+            <button v-if="o.status === 'Доставлен' && !o.reviewed" 
+             @click.stop="openReviewModal(o, item)" 
+             style="cursor: pointer; z-index: 10; position: relative; background: #000; color: #fff; border: none; padding: 7px 14px; border-radius: 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: all 0.2s active; transform: scale(0.95);">
             ОТЗЫВ
-             </button>
+           </button>
             </div>
     
              <div style="font-size: 10px; font-weight: 800; margin-top: 12px; text-align: right;">
@@ -1418,9 +1418,11 @@ getProductRating(productId) {
             this.vib();
             this.selectedOrderForReview = order;
             this.selectedProductForReview = item;
+
             this.starRating = 5;
             this.reviewText = '';
             this.reviewImages = [];
+            
             this.showReviewModal = true;
         },
      // Строка ~1060 (внутри methods)
