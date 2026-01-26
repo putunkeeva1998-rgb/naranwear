@@ -1041,15 +1041,10 @@ async manageCategory(action, id) { // Добавь async здесь
     }
 },
 
-        async checkout() {
-    // 1. Проверки перед отправкой
+       async checkout() {
     if (this.cart.length === 0) return;
     if (!this.form.name || !this.form.phone) {
         alert("Пожалуйста, заполните имя и телефон");
-        return;
-    }
-    if (!this.deliv || this.deliv === 'Не выбран') {
-        alert("Выберите способ доставки");
         return;
     }
 
@@ -1058,54 +1053,46 @@ async manageCategory(action, id) { // Добавь async здесь
     try {
         const orderId = Math.floor(Math.random() * 900000) + 100000;
         
-        // Формируем красивый текст товаров для сообщения в Telegram
-        const itemsText = this.cart.map(item => 
-            `▫️ ${item.title} ${item.selSize ? '(' + item.selSize + ')' : ''} — ${item.price} ₽`
-        ).join('\n');
+        // Считаем сумму (если у вас нет computed total)
+        const totalSum = this.cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
 
-        // Создаем объект заказа
-        // Мы дублируем ключи (name и customer_name), чтобы Python-бот точно их нашел
         const orderData = {
             order_id: orderId,
             name: this.form.name,
-            customer_name: this.form.name,
+            customer_name: this.form.name, // Для бота
             phone: this.form.phone,
-            customer_phone: this.form.phone,
+            customer_phone: this.form.phone, // Для бота
             address: this.address || "Адрес не указан",
-            delivery: this.deliv,
-            total: this.total, // Убедитесь, что у вас есть computed свойство или переменная total
-            order_total: this.total,
-            items_text: itemsText,
+            delivery: this.deliv || "Не выбрана", // Соответствует data.deliv
+            total: totalSum,
+            order_total: totalSum, // Для бота
+            items_text: this.cart.map(item => 
+                `▫️ ${item.title} ${item.selSize ? '('+item.selSize+')' : ''} — ${item.price} ₽`
+            ).join('\n'),
             status: 'Новый',
             user: {
-                id: Number(this.user.id), // Обязательно число для уведомлений от бота
+                id: Number(this.user.id), // Обязательно число
                 username: this.user.username || 'n/a'
             }
         };
 
-        // 1. ОТПРАВЛЯЕМ В ТЕЛЕГРАМ (для СМС админу)
-        // Это вызывает функцию web_app_data в вашем Python скрипте
+        // 1. Отправляем в Telegram (это летит в СМС боту)
         tg.sendData(JSON.stringify(orderData));
 
-        // 2. СОХРАНЯЕМ В FIREBASE (для админки и вашей статистики)
-        // В зависимости от версии Firebase используйте add или addDoc
-        const ordersRef = window.fb.collection(window.db, "orders");
-        await window.fb.addDoc(ordersRef, {
+        // 2. Сохраняем в Firebase
+        await window.fb.addDoc(window.fb.collection(window.db, "orders"), {
             ...orderData,
             createdAt: window.fb.serverTimestamp()
         });
 
-        tg.showAlert(`✅ Заказ №${orderId} успешно оформлен!`);
-        
-        // Очистка корзины и состояния
+        tg.showAlert(`✅ Заказ №${orderId} оформлен!`);
         this.cart = [];
         this.saveCart();
-        this.showCart = false; // Закрыть корзину
-        this.tab = 'profile';  // Переключить на вкладку профиля, чтобы клиент видел историю
+        this.tab = 'profile';
 
     } catch (e) {
-        console.error("Ошибка оформления:", e);
-        alert("Произошла ошибка: " + e.message);
+        console.error("Ошибка:", e);
+        alert("Ошибка: " + e.message);
     } finally {
         this.loading = false;
     }
