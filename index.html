@@ -941,7 +941,7 @@ Vue.createApp({
                 const fd = new FormData();
                 fd.append('image', f);
                 try {
-                    const r = await fetch('https://api.imgbb.com/1/upload?key=8546116032:AAGHzNWm8ueB5ynxIgzf6OLM7EdbA2geEbk', { method: 'POST', body: fd });
+                    const r = await fetch('https://api.imgbb.com/1/upload?key=839e62907e9a52f0159461b7771bcb2f', { method: 'POST', body: fd });
                     const d = await r.json();
                     if (d.data?.url) this.newP.images.push(d.data.url);
                 } catch (err) {
@@ -1089,7 +1089,27 @@ async manageCategory(action, id) { // Добавь async здесь
         await window.fb.addDoc(window.fb.collection(window.db, "orders"), orderData);
 
         // Отправляем в Telegram
-        tg.sendData(JSON.stringify(orderData));
+       const botToken = '8546116032:AAGHzNWm8ueB5ynxIgzf6OLM7EdbA2geEbk';
+// 2. ID вашего чата (куда должны приходить заказы)
+      const chatId = '387881523'; 
+
+        const messageText = `🛍 *НОВЫЙ ЗАКАЗ №${orderId}*\n\n` +
+    `👤 Клиент: ${this.form.name}\n` +
+    `📞 Телефон: ${this.form.phone}\n` +
+    `📍 Доставка: ${this.deliv}\n` +
+    `🏠 Адрес: ${this.address}\n\n` +
+    `📦 Состав заказа:\n${itemsText}\n\n` +
+    `💰 Итого: ${this.total} ₽`;
+
+     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { 
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        chat_id: chatId,
+        text: messageText,
+        parse_mode: 'Markdown'
+    })
+      });
         
         tg.showAlert(`Заказ №${orderId} успешно оформлен!`);
         
