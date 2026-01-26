@@ -1325,36 +1325,37 @@ updateChart() {
 }
     },
    mounted() {
+    const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
     
-    // 1. ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЯ (Улучшено)
+    // 1. ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЯ ИЗ TG
     const tgData = tg.initDataUnsafe?.user;
     if (tgData && tgData.id) {
         this.user = {
-            id: Number(tgData.id), // Для бота важно число
+            id: Number(tgData.id), // Принудительно в число, как в Python
             first_name: tgData.first_name || 'Клиент',
             username: tgData.username || '',
             photo_url: tgData.photo_url || ''
         };
     } else {
-        // Чтобы для тестов админка работала и в браузере, 
-        // замените 0 на ваш реальный ID из старого кода (387881523)
+        // Для тестов в браузере (ID должен быть числом!)
         this.user = { id: 387881523, first_name: 'Admin_Test' }; 
     }
+
+    console.log("Ваш ID в приложении:", this.user.id);
 
     const checkFb = setInterval(() => {
         if (window.db && window.fb) {
             clearInterval(checkFb);
             
-            // 2. ПРОВЕРКА АДМИНА (Строгое сравнение строк)
-            // Убедитесь, что в data у вас adminId = 387881523
+            // 2. ПРОВЕРКА АДМИНА
             if (this.user.id && this.adminId) {
                 this.isAdmin = String(this.user.id).trim() === String(this.adminId).trim();
             }
-            console.log("Доступ админа:", this.isAdmin);
+            console.log("Доступ администратора:", this.isAdmin);
 
-            // 3. Загрузка товаров и категорий
+            // 3. ЗАГРУЗКА ТОВАРОВ И КАТЕГОРИЙ
             window.fb.onSnapshot(window.fb.query(window.fb.collection(window.db, "products"), window.fb.orderBy("createdAt", "desc")), snap => {
                 this.products = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), aIdx: 0 }));
             });
@@ -1363,7 +1364,7 @@ updateChart() {
                 this.categories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             });
 
-            // 4. Загрузка ВСЕХ заказов (ТОЛЬКО ДЛЯ ВАС)
+            // 4. ЗАГРУЗКА ВСЕХ ЗАКАЗОВ (ДЛЯ АДМИНА)
             if (this.isAdmin) {
                 const qAll = window.fb.query(window.fb.collection(window.db, "orders"), window.fb.orderBy("createdAt", "desc"));
                 window.fb.onSnapshot(qAll, snap => {
@@ -1374,15 +1375,20 @@ updateChart() {
                 });
             }
 
-            // 5. Загрузка ЛИЧНЫХ заказов (ДЛЯ УВЕДОМЛЕНИЙ И КЛИЕНТА)
-            // Используем массив для защиты от разницы типов (число/строка)
-            if (this.user.id !== 0) {
+            // 5. ЗАГРУЗКА ЛИЧНЫХ ЗАКАЗОВ (ДЛЯ КЛИЕНТА)
+            if (this.user.id) {
+                const userIdValue = Number(this.user.id);
+                // Фильтр по user.id, который бот пишет как Integer
                 const qMy = window.fb.query(
                     window.fb.collection(window.db, "orders"), 
-                    window.fb.where("user.id", "in", [Number(this.user.id), String(this.user.id)])
+                    window.fb.where("user.id", "==", userIdValue)
                 );
+                
                 window.fb.onSnapshot(qMy, snap => {
                     this.myOrders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log("Личных заказов найдено:", this.myOrders.length);
+                }, (err) => {
+                    console.error("Ошибка при получении личных заказов:", err);
                 });
             }
         }
