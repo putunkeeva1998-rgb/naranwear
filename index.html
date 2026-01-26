@@ -490,7 +490,7 @@
 </div>
              </div>
 
-           <hr style="margin: 6px 0; border: none; border-top: 2px solid #000;">.   
+           <hr style="margin: 6px 0; border: none; border-top: 2px solid #000;">   
 
             <h3 class="brand-name" style="font-size:12px; margin-top:2px;">ЗАКАЗЫ ({{allOrders.length}}) | ВЫРУЧКА: {{revenue}} ₽</h3>
             <div v-for="o in allOrders" :key="o.id" 
@@ -835,7 +835,7 @@ Vue.createApp({
     if (exist) {
         exist.qty++;
     } else {
-        this.cart.push({ ...p, cartId, selSize: selectedSize, selColor: p.color, qty: 1 });
+        this.cart.push({ ...p, cartId, selSize: selectedSize, selColor: product.colors[product.aIdx], qty: 1 });
     }
     this.saveCart();
     tg.HapticFeedback.notificationOccurred('success');
@@ -1065,18 +1065,28 @@ async manageCategory(action, id) { // Добавь async здесь
         const orderId = Date.now().toString().slice(-6);
         
         // Формируем текст состава заказа
-        const itemsText = this.cart.map(item => 
-            `▫️ ${item.title} ${item.selSize ? '('+item.selSize+')' : ''} x${item.qty} — ${item.price * item.qty} ₽`
-        ).join('\n');
+        // 1. Формируем текст состава заказа с учетом Размера и Цвета
+        const itemsText = this.cart.map(item => {
+            // Собираем характеристики в массив, чтобы не было лишних запятых
+            let specs = [];
+            if (item.selSize) specs.push(`Р: ${item.selSize}`);
+            if (item.selColor) specs.push(`Цвет: ${item.selColor}`);
+            
+            const specsStr = specs.length > 0 ? `(${specs.join(', ')})` : '';
+            
+            return `▫️ ${item.title} ${specsStr} x${item.qty} — ${item.price * item.qty} ₽`;
+        }).join('\n');
 
+        // 2. Формируем объект заказа для Firebase
         const orderData = {
             order_id: orderId,
             customer_name: this.form.name,
             customer_phone: this.form.phone,
             order_total: this.total,
-            delivery: this.deliv, // Ключ для Python-бота
+            delivery: this.deliv,
             address: this.address,
-            items_text: itemsText,
+            items_text: itemsText, // Этот текст пойдет в Telegram
+            items: this.cart,      // Сохраняем массив объектов (включая цвета) для админки
             status: 'Новый',
             user: {
                 id: this.user.id || 0,
@@ -1090,21 +1100,21 @@ async manageCategory(action, id) { // Добавь async здесь
 
         // Отправляем в Telegram
        const botToken = '8546116032:AAGHzNWm8ueB5ynxIgzf6OLM7EdbA2geEbk';
-// 2. ID вашего чата (куда должны приходить заказы)
-      const chatId = '387881523'; 
+        // 2. ID вашего чата (куда должны приходить заказы)
+       const chatId = '387881523'; 
 
         const messageText = `🛍 *НОВЫЙ ЗАКАЗ №${orderId}*\n\n` +
-    `👤 Клиент: ${this.form.name}\n` +
-    `📞 Телефон: ${this.form.phone}\n` +
-    `📍 Доставка: ${this.deliv}\n` +
-    `🏠 Адрес: ${this.address}\n\n` +
-    `📦 Состав заказа:\n${itemsText}\n\n` +
-    `💰 Итого: ${this.total} ₽`;
+       `👤 Клиент: ${this.form.name}\n` +
+       `📞 Телефон: ${this.form.phone}\n` +
+       `📍 Доставка: ${this.deliv}\n` +
+       `🏠 Адрес: ${this.address}\n\n` +
+       `📦 Состав заказа:\n${itemsText}\n\n` +
+       `💰 Итого: ${this.total} ₽`;
 
      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { 
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         chat_id: chatId,
         text: messageText,
         parse_mode: 'Markdown'
