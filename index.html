@@ -883,16 +883,15 @@ quickAddToCart(p) {
          if (this.initMap) this.initMap();
         },
         setTab(t) {
-        this.curr = t;
-        // Если переходим на вкладку админа, принудительно обновляем график
-           if (t === 'admin') {
-           this.$nextTick(() => {
+       this.curr = t;
+        if (t === 'admin') {
+        this.$nextTick(() => {
             setTimeout(() => {
                 this.updateChart();
-            }, 100);
-           });
-          }
-          },
+            }, 200); // Небольшая задержка при ручном переходе
+         });
+        }
+        },
 
         initMap() {
             try {
