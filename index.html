@@ -605,12 +605,16 @@
     </div>
 
     <nav class="bottom-nav">
-        <button v-for="btn in nav" :key="btn.id" @click="tab = btn.id; vib()" :class="['nav-item', {active: tab === btn.id}]">
-            <div v-if="btn.id === 'cart' && cartCount > 0" class="badge">{{cartCount}}</div>
-            <svg v-html="btn.icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
-            <span>{{btn.label}}</span>
-        </button>
-    </nav>
+    <button v-for="btn in nav" :key="btn.id" 
+        @click="setTab(btn.id)" 
+        :class="['nav-item', {active: tab === btn.id}]"> <div v-if="btn.id === 'cart' && cart.length > 0" class="badge">
+            {{cart.length}}
+        </div>
+        
+        <svg v-html="btn.icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
+        <span>{{btn.label}}</span>
+    </button>
+</nav>
 </div>
 
 <script type="module">
@@ -786,6 +790,23 @@ Vue.createApp({
             }
         },
 
+       setTab(id) {
+    if (this.vib) this.vib(); 
+    this.tab = id; // Используем именно tab, как у вас в data()
+
+    // Если перешли в профиль, рисуем график
+    if (id === 'profile') {
+        this.$nextTick(() => {
+            // Даем 200мс, чтобы блок успел появиться в HTML
+            setTimeout(() => {
+                if (typeof this.updateChart === 'function') {
+                    this.updateChart();
+                }
+            }, 200);
+        });
+    }
+},
+
         handleScroll(e, p) {
             if (!p) return;
             const idx = Math.round(e.target.scrollLeft / e.target.offsetWidth);
@@ -877,20 +898,10 @@ quickAddToCart(p) {
         },
 
         setDelivery(d) {
-        this.deliv = d; // Записываем в deliv, так как она у тебя в data()
-        this.vib();
-        // Если у тебя инициализируется карта при выборе:
-         if (this.initMap) this.initMap();
-        },
-        setTab(t) {
-       this.curr = t;
-        if (t === 'admin') {
-        this.$nextTick(() => {
-            setTimeout(() => {
-                this.updateChart();
-            }, 200); // Небольшая задержка при ручном переходе
-         });
-        }
+    this.deliv = d; // Записываем в deliv, так как она у тебя в data()
+    this.vib();
+    // Если у тебя инициализируется карта при выборе:
+    if (this.initMap) this.initMap();
         },
 
         initMap() {
@@ -1326,33 +1337,32 @@ async deleteOrder(docId) {
     }
 },
 updateChart() {
-    const canvas = document.getElementById('orderChart');
-    if (!canvas) return; // Если мы не на вкладке админа, выходим
-    const ctx = canvas.getContext('2d');
+    const ctx = document.getElementById('orderChart');
+    if (!ctx) return;
 
     const labels = [];
     const counts = [];
     const now = new Date();
+
+    const orders = this.allOrders || [];
 
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(now.getDate() - i);
         labels.push(d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }));
         
+        // Считаем заказы за этот день
         const dayStart = new Date(d.setHours(0,0,0,0)).getTime();
         const dayEnd = new Date(d.setHours(23,59,59,999)).getTime();
         
         const dayOrders = this.allOrders.filter(o => {
-            const t = o.createdAt?.seconds ? o.createdAt.seconds * 1000 : o.createdAt || 0;
+            const t = o.createdAt?.seconds ? o.createdAt.seconds * 1000 : 0;
             return t >= dayStart && t <= dayEnd;
         });
         counts.push(dayOrders.length);
     }
 
-    // Уничтожаем старый объект графика, чтобы не было наслоений
-    if (this.chart) {
-        this.chart.destroy();
-    }
+    if (this.chart) this.chart.destroy();
 
     this.chart = new Chart(ctx, {
         type: 'line',
@@ -1364,7 +1374,7 @@ updateChart() {
                 borderColor: '#000',
                 backgroundColor: 'rgba(0,0,0,0.05)',
                 borderWidth: 3,
-                tension: 0.4,
+                tension: 0.4, // Делает линию плавной (премиально)
                 fill: true,
                 pointRadius: 4,
                 pointBackgroundColor: '#000'
@@ -1372,8 +1382,11 @@ updateChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
         }
     });
 }
@@ -1403,16 +1416,10 @@ updateChart() {
 
                 // Загрузка всех заказов (для админа)
                 if (this.isAdmin) {
-                 window.fb.onSnapshot(window.fb.query(window.fb.collection(window.db, "orders"), window.fb.orderBy("createdAt", "desc")), snap => {
-                   this.allOrders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-                  // Ждем, пока интерфейс полностью «прогрузится»
-                  this.$nextTick(() => {
-                  setTimeout(() => {
-                    this.updateChart();
-                     }, 500); // 500 миллисекунд хватит, чтобы canvas появился в DOM
-                   });
-                 });
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.db, "orders"), window.fb.orderBy("createdAt", "desc")), snap => {
+                        this.allOrders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        this.$nextTick(() => { this.updateChart(); });
+                    });
                 }
 
                 // Загрузка личных заказов
@@ -1431,3 +1438,4 @@ updateChart() {
 
 </body>
 </html>
+
